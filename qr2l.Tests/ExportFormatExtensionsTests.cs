@@ -1,4 +1,5 @@
-﻿using qr2l.Core;
+﻿using System;
+using qr2l.Core;
 using Xunit;
 
 namespace qr2l.Tests;

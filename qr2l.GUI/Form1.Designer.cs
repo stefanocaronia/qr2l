@@ -249,7 +249,6 @@ partial class Form1
         textQrCode.TabIndex = 0;
         tooltip.SetToolTip(textQrCode, "Insert here the text for the QR Code");
         textQrCode.UseWaitCursor = true;
-        textQrCode.WordWrap = false;
         textQrCode.TextChanged += OnTextQrCodeChanged;
         // 
         // pictureQrCode

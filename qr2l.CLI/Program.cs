@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+﻿﻿using System.Drawing;
 using System.Text;
 using qr2l.Core;
 
@@ -55,19 +55,20 @@ internal class Program
         ShowInfo("Payload Formats:");
         ShowInfo("  text         Plain text");
         ShowInfo("  url          URL (adds https:// if missing)");
-        ShowInfo("  mail         email;subject;body");
+        ShowInfo("  mail         email;subject;body (subject and body are optional)");
         ShowInfo("  sms          number;message");
         ShowInfo("  phone        phonenumber");
-        ShowInfo("  wifi         SSID;password");
+        ShowInfo("  wifi         WIFI:SSID;password or WIFI:T:WPA;S:SSID;P:password;");
         ShowInfo("  geolocation  latitude,longitude");
         ShowInfo("  contact      firstName;lastName;phone;email");
         ShowInfo("  event        subject;description;location;startDateTime;endDateTime");
-        ShowInfo("  whatsapp     number;message");
+        ShowInfo("  whatsapp     +number;message");
         ShowInfo("");
         ShowInfo("Examples:");
         ShowInfo("  qr2l \"Hello World\" output.png");
         ShowInfo("  qr2l \"https://example.com\" qr.svg --dark-color=FF0000");
-        ShowInfo("  qr2l \"MyWiFi;password123\" wifi.png --payload-mode=wifi");
+        ShowInfo("  qr2l \"WIFI:MyWiFi;password123\" wifi.png --payload-mode=wifi");
+        ShowInfo("  qr2l \"WIFI:T:WPA;S:MyNetwork;P:secret123;\" wifi.png");
         ShowInfo("  qr2l \"Logo QR\" branded.png --logo=logo.png --error-correction=high");
         ShowInfo("  qr2l \"info@example.com;Hello;Email body\" mail.png --payload-mode=mail");
         ShowInfo("  qr2l \"+1234567890;Hello from QR\" sms.png --payload-mode=sms");

@@ -94,7 +94,16 @@ public static class QrGenerator
         
         text = text.Trim();
         
-        // Email detection (must be before URL detection)
+        // URL detection with explicit protocol must come first
+        if (text.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            text.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+            text.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase) ||
+            text.StartsWith("ftps://", StringComparison.OrdinalIgnoreCase) ||
+            text.StartsWith("file://", StringComparison.OrdinalIgnoreCase)) {
+            return PayloadMode.Url;
+        }
+        
+        // Email detection
         if (text.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)) {
             return PayloadMode.Mail;
         }
@@ -106,10 +115,8 @@ public static class QrGenerator
             }
         }
         
-        // URL detection
-        if (text.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-            text.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
-            text.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ||
+        // URL detection without explicit protocol
+        if (text.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ||
             (text.Contains('.') && !text.Contains(' ') && !text.Contains(';') && !text.Contains('@') &&
              (text.EndsWith(".com") || text.EndsWith(".net") || text.EndsWith(".org") || 
               text.EndsWith(".io") || text.EndsWith(".it") || text.Contains(".com/") || 
@@ -134,6 +141,11 @@ public static class QrGenerator
         string phonePattern = text.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "");
         if (phonePattern.Length >= 7 && phonePattern.All(char.IsDigit) && !text.Contains(';') && !text.Contains(',')) {
             return PayloadMode.Phone;
+        }
+        
+        // WiFi detection: must start with WIFI: prefix or have complete format
+        if (text.StartsWith("WIFI:", StringComparison.OrdinalIgnoreCase)) {
+            return PayloadMode.WiFi;
         }
         
         // Structured data with semicolons
@@ -172,11 +184,6 @@ public static class QrGenerator
                 if (hasEmail || hasPhone) {
                     return PayloadMode.ContactData;
                 }
-            }
-            
-            // WiFi detection: simple SSID;password pattern (fallback for 2 parts)
-            if (parts.Length == 2 && !parts[0].Contains('@') && !parts[0].All(char.IsDigit)) {
-                return PayloadMode.WiFi;
             }
         }
         
@@ -292,10 +299,20 @@ public static class QrGenerator
 
     private static string PrepareWiFiPayload(string text, QrCodeOptions? options)
     {
+        // If already in complete WIFI: format, return as-is
+        if (text.StartsWith("WIFI:T:", StringComparison.OrdinalIgnoreCase)) {
+            return text;
+        }
+        
+        // Remove WIFI: prefix if present and parse simplified format
+        if (text.StartsWith("WIFI:", StringComparison.OrdinalIgnoreCase)) {
+            text = text.Substring(5);
+        }
+        
         string[] parts = text.Split(';');
 
         if (parts.Length < 1 || parts.Length > 2) {
-            throw new ArgumentException("WiFi payload must be in format: SSID;password (password optional for open networks)");
+            throw new ArgumentException("WiFi payload must be in format: WIFI:ssid;password (password optional for open networks)");
         }
 
         string ssid = parts[0].Trim();
@@ -313,7 +330,7 @@ public static class QrGenerator
 
         string hiddenStr = hidden ? "H:true;" : "";
 
-        if (authType == WiFiAuthenticationType.NoPassword) {
+        if (authType == WiFiAuthenticationType.NoPassword || string.IsNullOrEmpty(password)) {
             return $"WIFI:T:{authTypeStr};S:{ssid};{hiddenStr};";
         }
 

@@ -14,7 +14,7 @@ public partial class Form1 : Form
     private const string RepoUrl = "https://github.com/stefanocaronia/qr2l";
     private const string SetLogoText = "Set the logo";
     private const string RemoveLogoText = "Remove the logo";
-    private const string Version = "1.0";
+    private const string Version = "1.0.1";
 
     private readonly Timer debounceTimer;
     private byte[]? pngData;
@@ -298,7 +298,20 @@ public partial class Form1 : Form
             "- Optionally, add a logo by clicking on the logo box. Click again to clear the logo.\n" +
             "\n" +
             "The QR code preview will update automatically.\n" +
-            "Use the buttons to save the QR code or copy it to the clipboard as an image or SVG.";
+            "Use the buttons to save the QR code or copy it to the clipboard as an image or SVG.\n\n" +
+            "Supported Formats (auto-detected):\n" +
+            "• URLs: http://, https://, ftp://, www., domain.com\n" +
+            "• Email: user@domain.com;subject;body (subject and body optional)\n" +
+            "• Phone: +1234567890 or (123) 456-7890\n" +
+            "• SMS: 1234567890;message text\n" +
+            "• WhatsApp: +1234567890;message text\n" +
+            "• WiFi: WIFI:NetworkName;password or WIFI:T:WPA;S:SSID;P:password;\n" +
+            "• Geolocation: 45.4642,9.1900 (latitude,longitude)\n" +
+            "• Contact: FirstName;LastName;Phone;Email\n" +
+            "• Event: Title;Description;Location;StartDate;EndDate\n" +
+            "\n" +
+            "Note: WiFi networks require the WIFI: prefix. You can use the simplified\n" +
+            "format (WIFI:SSID;password) or the complete format for advanced options.";
         MessageBox.Show(helpText, "Help", MessageBoxButtons.OK, MessageBoxIcon.Question);
     }
 

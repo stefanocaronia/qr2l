@@ -37,6 +37,8 @@ internal class Program
 
     private static void ShowUsage()
     {
+        ShowInfo($"*** {Project.Title} ***");
+        ShowInfo("");
         ShowInfo("Usage: qr2l <text|url> <output file> [options]");
         ShowInfo("");
         ShowInfo("Supported formats: .png, .svg, .pdf, .bmp, .jpg, .jpeg, .gif, .ps");

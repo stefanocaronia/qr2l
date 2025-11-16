@@ -4,7 +4,7 @@ using Timer = System.Windows.Forms.Timer;
 
 namespace qr2l.GUI;
 
-public partial class Form1 : Form
+public sealed partial class Form1 : Form
 {
     #region Constants and Fields
 
@@ -14,7 +14,6 @@ public partial class Form1 : Form
     private const string RepoUrl = "https://github.com/stefanocaronia/qr2l";
     private const string SetLogoText = "Set the logo";
     private const string RemoveLogoText = "Remove the logo";
-    private const string Version = "1.0.1";
 
     private readonly Timer debounceTimer;
     private byte[]? pngData;
@@ -30,7 +29,7 @@ public partial class Form1 : Form
     {
         InitializeComponent();
 
-        Text = $"qr2l v{Version} - QR Code Tool";
+        Text = Project.Title;
 
         UseWaitCursor = false;
         mainGrid.UseWaitCursor = false;
@@ -72,7 +71,7 @@ public partial class Form1 : Form
         debounceTimer.Start();
     }
 
-    private void OnDebounceTimerTick(object sender, EventArgs e)
+    private void OnDebounceTimerTick(object? sender, EventArgs e)
     {
         debounceTimer.Stop();
         GenerateQrPreview();
@@ -292,7 +291,7 @@ public partial class Form1 : Form
 
     private void helpButton_Click(object sender, EventArgs e)
     {
-        string helpText = $"*** qr2l v{Version} - QR Code Tool ***\n\n" +
+        string helpText = $"*** {Project.Title} ***\n\n" +
             "- Enter the text you want to encode in the QR code in the text box.\n" +
             "- Choose foreground and background colors by clicking on the color panels.\n" +
             "- Optionally, add a logo by clicking on the logo box. Click again to clear the logo.\n" +

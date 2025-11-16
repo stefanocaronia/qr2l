@@ -1,4 +1,5 @@
 ﻿# qr2l
+
 **A minimalistic QR Code Generator Tool**
 
 ---
@@ -6,48 +7,125 @@
 ## Projects
 
 ### **qr2l.Core**
-Core library providing QR code generation functionality with support for multiple formats (PNG, SVG, PDF, BMP, JPEG, GIF, PostScript) and customization options (colors, logos, error correction levels, pixel shapes). Built on top of QRCoder.
+
+Core library providing QR code generation functionality with support for multiple formats (PNG, SVG, PDF, BMP, JPEG,
+GIF, PostScript) and customization options (colors, logos, error correction levels, pixel shapes). Built on top of
+QRCoder.
 
 ### **qr2l.CLI**
-Command-line interface for generating QR codes from the terminal. Supports all core features with an easy-to-use syntax for quick QR code generation.
+
+Command-line interface for generating QR codes from the terminal. Supports all core features with an easy-to-use syntax
+for quick QR code generation.
 
 ### **qr2l.GUI**
-Windows Forms desktop application with a graphical interface for creating and exporting QR codes. Features real-time preview, color customization, logo embedding, and clipboard support.
+
+Windows Forms desktop application with a graphical interface for creating and exporting QR codes. Features real-time
+preview, color customization, logo embedding, and clipboard support.
+
+---
+
+## Dependencies
+
+### **qr2l.Core**
+
+- [QRCoder](https://github.com/codebude/QRCoder) 1.7.0 - QR code generation library
+
+The dependency is automatically restored when building the solution or individual projects via `dotnet build` or
+`dotnet restore`.
 
 ---
 
 ## Build Instructions
 
 ### Prerequisites
+
 - .NET 9.0 SDK or later
 
 ### Build All Projects
+
 ```powershell
 dotnet build qr2l.slnx
-```
-
-### Build Individual Projects
-```powershell
-# Core library
-dotnet build qr2l.Core/qr2l.Core.csproj
-
-# CLI application
-dotnet build qr2l.CLI/qr2l.CLI.csproj
-
-# GUI application
-dotnet build qr2l.GUI/qr2l.GUI.csproj
-```
-
-### Release Build
-```powershell
 dotnet build qr2l.slnx -c Release
 ```
 
 ---
 
-## CLI Usage Example
+## Publishing
+
+### Version Management
+
+The application version is centrally defined in `Directory.Build.props` and automatically inherited by all projects. To update the version, edit the `<Version>` property in this file.
+
+### Automated Build (Recommended)
+
+Use the provided PowerShell build script to create a complete distribution package:
+
 ```powershell
-qr2l "https://example.com" output.png --error-correction=high --dark-color=000000
-qr2l "WIFI:networkname;password" output.svg
+.\build.ps1
+```
+
+The script extracts the version from `Directory.Build.props` and creates `bin\qr2l-v<version>-win-x64.zip`.
+
+### Manual Publishing
+
+Create self-contained, single-file executables for distribution:
+
+#### CLI Application
+
+```powershell
+dotnet publish qr2l.CLI/qr2l.CLI.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish
+```
+
+#### GUI Application
+
+```powershell
+dotnet publish qr2l.GUI/qr2l.GUI.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish
+```
+
+---
+
+## CLI Usage Examples
+
+```powershell
+# Basic text QR code
+qr2l "Hello World" output.png
+
+# URL with custom colors
+qr2l "https://example.com" qr.svg --dark-color=FF0000 --light-color=FFFF00
+
+# High error correction with logo
+qr2l "https://github.com" branded.png --error-correction=high --logo=logo.png
+
+# Email with subject and body
+qr2l "info@example.com;Hello;Email body text" email.png
+
+# WiFi network (simplified format)
+qr2l "WIFI:MyNetwork;password123" wifi.png
+
+# WiFi network (complete format with WPA)
+qr2l "WIFI:T:WPA;S:MyNetwork;P:secret123;" wifi-secure.svg
+
+# Phone number
+qr2l "+1234567890" phone.png
+
+# SMS with message
+qr2l "1234567890;Hello from QR code" sms.png
+
+# WhatsApp message
+qr2l "+1234567890;Hi there!" whatsapp.png
+
+# Geolocation coordinates
+qr2l "45.4642,9.1900" location.png
+
+# Contact (vCard format)
+qr2l "John;Doe;+1234567890;john@example.com" contact.png
+
+# Custom pixel size and shape
+qr2l "https://example.com" custom.png --pixels-per-module=10 --shape=circle
+
+# Export to different formats
+qr2l "Sample text" output.pdf
+qr2l "Sample text" output.bmp
+qr2l "Sample text" output.jpg
 ```
 

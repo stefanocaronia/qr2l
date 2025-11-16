@@ -1,0 +1,10 @@
+﻿<Project>
+    <PropertyGroup>
+        <Version>1.0.2</Version>
+        <Product>qr2l</Product>
+        <Copyright>CC-BY-SA-4.0</Copyright>
+        <Description>QR Code Generator Tool</Description>
+        <Authors>Stefano Caronia</Authors>
+    </PropertyGroup>
+</Project>
+

@@ -1,0 +1,52 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Rr]eleases/
+
+# Visual Studio cache/options
+.vs/
+*.user
+*.userosscache
+*.suo
+
+# JetBrains Rider
+.idea/
+*.sln.DotSettings.user
+
+# Generated files
+*.exe
+*.dll
+*.pdb
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+*.mdb
+*.assets.json
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+nuget.exe
+
+# Logs
+*.log
+*.tlog
+
+# Other tooling caches
+.ionide/
+.vscode/
+
+# OS files
+[Tt]humbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Images editing temp files
+*.kra~
+*.png~

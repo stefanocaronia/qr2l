@@ -1,0 +1,380 @@
+﻿namespace qr2l.GUI;
+
+partial class Form1
+{
+    /// <summary>
+    ///  Required designer variable.
+    /// </summary>
+    private System.ComponentModel.IContainer components = null;
+
+    /// <summary>
+    ///  Clean up any resources being used.
+    /// </summary>
+    /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && (components != null))
+        {
+            components.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    #region Windows Form Designer generated code
+
+    /// <summary>
+    /// Required method for Designer support - do not modify
+    /// the contents of this method with the code editor.
+    /// </summary>
+    private void InitializeComponent()
+    {
+        components = new System.ComponentModel.Container();
+        mainGrid = new System.Windows.Forms.TableLayoutPanel();
+        toolBar = new System.Windows.Forms.FlowLayoutPanel();
+        saveButton = new System.Windows.Forms.Button();
+        copyAsImageButton = new System.Windows.Forms.Button();
+        copyAsSvgButton = new System.Windows.Forms.Button();
+        donateButton = new System.Windows.Forms.Button();
+        comboLang = new System.Windows.Forms.ComboBox();
+        helpButton = new System.Windows.Forms.Button();
+        optionsGrid = new System.Windows.Forms.TableLayoutPanel();
+        comboStyle = new System.Windows.Forms.ComboBox();
+        panelFg = new System.Windows.Forms.Panel();
+        panelBg = new System.Windows.Forms.Panel();
+        textLogoPath = new System.Windows.Forms.TextBox();
+        textQrCode = new System.Windows.Forms.TextBox();
+        pictureQrCode = new System.Windows.Forms.PictureBox();
+        imageMenu = new System.Windows.Forms.ContextMenuStrip(components);
+        saveAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+        copyAsImageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+        copyAsSVGToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+        colorDialog = new System.Windows.Forms.ColorDialog();
+        openFileDialog = new System.Windows.Forms.OpenFileDialog();
+        saveAsDialog = new System.Windows.Forms.SaveFileDialog();
+        tooltip = new System.Windows.Forms.ToolTip(components);
+        mainGrid.SuspendLayout();
+        toolBar.SuspendLayout();
+        optionsGrid.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)pictureQrCode).BeginInit();
+        imageMenu.SuspendLayout();
+        SuspendLayout();
+        // 
+        // mainGrid
+        // 
+        mainGrid.CellBorderStyle = System.Windows.Forms.TableLayoutPanelCellBorderStyle.Single;
+        mainGrid.ColumnCount = 1;
+        mainGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+        mainGrid.Controls.Add(toolBar, 0, 0);
+        mainGrid.Controls.Add(optionsGrid, 0, 1);
+        mainGrid.Controls.Add(textQrCode, 0, 2);
+        mainGrid.Controls.Add(pictureQrCode, 0, 3);
+        mainGrid.Dock = System.Windows.Forms.DockStyle.Fill;
+        mainGrid.Location = new System.Drawing.Point(0, 0);
+        mainGrid.Margin = new System.Windows.Forms.Padding(0);
+        mainGrid.Name = "mainGrid";
+        mainGrid.RowCount = 4;
+        mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
+        mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+        mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+        mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 300F));
+        mainGrid.Size = new System.Drawing.Size(369, 523);
+        mainGrid.TabIndex = 0;
+        mainGrid.UseWaitCursor = true;
+        // 
+        // toolBar
+        // 
+        toolBar.Controls.Add(saveButton);
+        toolBar.Controls.Add(copyAsImageButton);
+        toolBar.Controls.Add(copyAsSvgButton);
+        toolBar.Controls.Add(donateButton);
+        toolBar.Controls.Add(comboLang);
+        toolBar.Controls.Add(helpButton);
+        toolBar.Dock = System.Windows.Forms.DockStyle.Fill;
+        toolBar.Location = new System.Drawing.Point(4, 4);
+        toolBar.Name = "toolBar";
+        toolBar.Size = new System.Drawing.Size(361, 29);
+        toolBar.TabIndex = 4;
+        toolBar.UseWaitCursor = true;
+        // 
+        // saveButton
+        // 
+        saveButton.Image = global::qr2l.GUI.Properties.Resources.save;
+        saveButton.Location = new System.Drawing.Point(3, 3);
+        saveButton.Name = "saveButton";
+        saveButton.Size = new System.Drawing.Size(24, 24);
+        saveButton.TabIndex = 0;
+        tooltip.SetToolTip(saveButton, "Save the QRCode");
+        saveButton.UseVisualStyleBackColor = true;
+        saveButton.UseWaitCursor = true;
+        saveButton.Click += saveButton_Click;
+        // 
+        // copyAsImageButton
+        // 
+        copyAsImageButton.Image = global::qr2l.GUI.Properties.Resources.clipboard;
+        copyAsImageButton.Location = new System.Drawing.Point(33, 3);
+        copyAsImageButton.Name = "copyAsImageButton";
+        copyAsImageButton.Size = new System.Drawing.Size(24, 24);
+        copyAsImageButton.TabIndex = 1;
+        tooltip.SetToolTip(copyAsImageButton, "Copy Image to clipboard");
+        copyAsImageButton.UseVisualStyleBackColor = true;
+        copyAsImageButton.UseWaitCursor = true;
+        copyAsImageButton.Click += copyAsImageButton_Click;
+        // 
+        // copyAsSvgButton
+        // 
+        copyAsSvgButton.Image = global::qr2l.GUI.Properties.Resources.puzzle;
+        copyAsSvgButton.Location = new System.Drawing.Point(63, 3);
+        copyAsSvgButton.Name = "copyAsSvgButton";
+        copyAsSvgButton.Size = new System.Drawing.Size(24, 24);
+        copyAsSvgButton.TabIndex = 2;
+        tooltip.SetToolTip(copyAsSvgButton, "Copy SVG string to clipboard");
+        copyAsSvgButton.UseVisualStyleBackColor = true;
+        copyAsSvgButton.UseWaitCursor = true;
+        copyAsSvgButton.Click += copyAsSvgButton_Click;
+        // 
+        // donateButton
+        // 
+        donateButton.Image = global::qr2l.GUI.Properties.Resources.heart;
+        donateButton.Location = new System.Drawing.Point(93, 3);
+        donateButton.Name = "donateButton";
+        donateButton.Size = new System.Drawing.Size(24, 24);
+        donateButton.TabIndex = 3;
+        tooltip.SetToolTip(donateButton, "Buy me a coffee");
+        donateButton.UseVisualStyleBackColor = true;
+        donateButton.UseWaitCursor = true;
+        donateButton.Click += donateButton_Click;
+        // 
+        // comboLang
+        // 
+        comboLang.Dock = System.Windows.Forms.DockStyle.Right;
+        comboLang.FormattingEnabled = true;
+        comboLang.Location = new System.Drawing.Point(123, 3);
+        comboLang.Name = "comboLang";
+        comboLang.Size = new System.Drawing.Size(205, 23);
+        comboLang.TabIndex = 4;
+        tooltip.SetToolTip(comboLang, "Sets the language of the tool");
+        comboLang.UseWaitCursor = true;
+        // 
+        // helpButton
+        // 
+        helpButton.Image = global::qr2l.GUI.Properties.Resources.help;
+        helpButton.Location = new System.Drawing.Point(334, 3);
+        helpButton.Name = "helpButton";
+        helpButton.Size = new System.Drawing.Size(24, 24);
+        helpButton.TabIndex = 5;
+        tooltip.SetToolTip(helpButton, "Help");
+        helpButton.UseVisualStyleBackColor = true;
+        helpButton.UseWaitCursor = true;
+        helpButton.Click += helpButton_Click;
+        // 
+        // optionsGrid
+        // 
+        optionsGrid.AutoSize = true;
+        optionsGrid.ColumnCount = 4;
+        optionsGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+        optionsGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+        optionsGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+        optionsGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+        optionsGrid.Controls.Add(comboStyle, 2, 0);
+        optionsGrid.Controls.Add(panelFg, 0, 0);
+        optionsGrid.Controls.Add(panelBg, 1, 0);
+        optionsGrid.Controls.Add(textLogoPath, 3, 0);
+        optionsGrid.Dock = System.Windows.Forms.DockStyle.Fill;
+        optionsGrid.Location = new System.Drawing.Point(1, 37);
+        optionsGrid.Margin = new System.Windows.Forms.Padding(0);
+        optionsGrid.Name = "optionsGrid";
+        optionsGrid.RowCount = 1;
+        optionsGrid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+        optionsGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+        optionsGrid.Size = new System.Drawing.Size(367, 29);
+        optionsGrid.TabIndex = 3;
+        optionsGrid.UseWaitCursor = true;
+        // 
+        // comboStyle
+        // 
+        comboStyle.Dock = System.Windows.Forms.DockStyle.Fill;
+        comboStyle.FormattingEnabled = true;
+        comboStyle.Location = new System.Drawing.Point(185, 3);
+        comboStyle.Name = "comboStyle";
+        comboStyle.Size = new System.Drawing.Size(85, 23);
+        comboStyle.TabIndex = 3;
+        tooltip.SetToolTip(comboStyle, "Sets the style of the pixels");
+        comboStyle.UseWaitCursor = true;
+        // 
+        // panelFg
+        // 
+        panelFg.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+        panelFg.Cursor = System.Windows.Forms.Cursors.WaitCursor;
+        panelFg.Dock = System.Windows.Forms.DockStyle.Fill;
+        panelFg.Location = new System.Drawing.Point(3, 3);
+        panelFg.Name = "panelFg";
+        panelFg.Size = new System.Drawing.Size(85, 23);
+        panelFg.TabIndex = 1;
+        tooltip.SetToolTip(panelFg, "Sets the pixel color");
+        panelFg.UseWaitCursor = true;
+        panelFg.Click += panelFg_Click;
+        // 
+        // panelBg
+        // 
+        panelBg.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+        panelBg.Cursor = System.Windows.Forms.Cursors.WaitCursor;
+        panelBg.Dock = System.Windows.Forms.DockStyle.Fill;
+        panelBg.Location = new System.Drawing.Point(94, 3);
+        panelBg.Name = "panelBg";
+        panelBg.Size = new System.Drawing.Size(85, 23);
+        panelBg.TabIndex = 0;
+        tooltip.SetToolTip(panelBg, "Sets the background color");
+        panelBg.UseWaitCursor = true;
+        panelBg.Click += panelBg_Click;
+        // 
+        // textLogoPath
+        // 
+        textLogoPath.BackColor = System.Drawing.SystemColors.ControlLight;
+        textLogoPath.Cursor = System.Windows.Forms.Cursors.WaitCursor;
+        textLogoPath.Dock = System.Windows.Forms.DockStyle.Fill;
+        textLogoPath.Location = new System.Drawing.Point(276, 3);
+        textLogoPath.Name = "textLogoPath";
+        textLogoPath.ReadOnly = true;
+        textLogoPath.Size = new System.Drawing.Size(88, 23);
+        textLogoPath.TabIndex = 11;
+        textLogoPath.Text = "(No Logo)";
+        textLogoPath.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+        tooltip.SetToolTip(textLogoPath, "The logo. Click again to remove.");
+        textLogoPath.UseWaitCursor = true;
+        textLogoPath.WordWrap = false;
+        textLogoPath.Click += textLogoPath_Click;
+        // 
+        // textQrCode
+        // 
+        textQrCode.AllowDrop = true;
+        textQrCode.Dock = System.Windows.Forms.DockStyle.Fill;
+        textQrCode.Location = new System.Drawing.Point(1, 67);
+        textQrCode.Margin = new System.Windows.Forms.Padding(0);
+        textQrCode.Multiline = true;
+        textQrCode.Name = "textQrCode";
+        textQrCode.PlaceholderText = "Insert here the text for the QR Code";
+        textQrCode.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+        textQrCode.Size = new System.Drawing.Size(367, 98);
+        textQrCode.TabIndex = 0;
+        tooltip.SetToolTip(textQrCode, "Insert here the text for the QR Code");
+        textQrCode.UseWaitCursor = true;
+        textQrCode.WordWrap = false;
+        textQrCode.TextChanged += OnTextQrCodeChanged;
+        // 
+        // pictureQrCode
+        // 
+        pictureQrCode.Anchor = System.Windows.Forms.AnchorStyles.None;
+        pictureQrCode.ContextMenuStrip = imageMenu;
+        pictureQrCode.Location = new System.Drawing.Point(1, 166);
+        pictureQrCode.Margin = new System.Windows.Forms.Padding(0);
+        pictureQrCode.Name = "pictureQrCode";
+        pictureQrCode.Size = new System.Drawing.Size(367, 356);
+        pictureQrCode.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+        pictureQrCode.TabIndex = 1;
+        pictureQrCode.TabStop = false;
+        tooltip.SetToolTip(pictureQrCode, "Right click the image for options");
+        pictureQrCode.UseWaitCursor = true;
+        // 
+        // imageMenu
+        // 
+        imageMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { saveAsToolStripMenuItem, copyAsImageToolStripMenuItem, copyAsSVGToolStripMenuItem });
+        imageMenu.Name = "imageMenu";
+        imageMenu.Size = new System.Drawing.Size(155, 70);
+        imageMenu.ItemClicked += imageMenu_ItemClicked;
+        // 
+        // saveAsToolStripMenuItem
+        // 
+        saveAsToolStripMenuItem.Image = global::qr2l.GUI.Properties.Resources.save;
+        saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
+        saveAsToolStripMenuItem.Size = new System.Drawing.Size(154, 22);
+        saveAsToolStripMenuItem.Text = "Save As";
+        // 
+        // copyAsImageToolStripMenuItem
+        // 
+        copyAsImageToolStripMenuItem.Image = global::qr2l.GUI.Properties.Resources.clipboard;
+        copyAsImageToolStripMenuItem.Name = "copyAsImageToolStripMenuItem";
+        copyAsImageToolStripMenuItem.Size = new System.Drawing.Size(154, 22);
+        copyAsImageToolStripMenuItem.Text = "Copy As Image";
+        // 
+        // copyAsSVGToolStripMenuItem
+        // 
+        copyAsSVGToolStripMenuItem.Image = global::qr2l.GUI.Properties.Resources.puzzle;
+        copyAsSVGToolStripMenuItem.Name = "copyAsSVGToolStripMenuItem";
+        copyAsSVGToolStripMenuItem.Size = new System.Drawing.Size(154, 22);
+        copyAsSVGToolStripMenuItem.Text = "Copy As SVG";
+        // 
+        // openFileDialog
+        // 
+        openFileDialog.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp;*.gif";
+        // 
+        // saveAsDialog
+        // 
+        saveAsDialog.DefaultExt = "png";
+        saveAsDialog.Title = "Save As";
+        // 
+        // Form1
+        // 
+        AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+        AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+        ClientSize = new System.Drawing.Size(369, 523);
+        Controls.Add(mainGrid);
+        FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+        MaximizeBox = false;
+        SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
+        Text = "qr2l - QR Code Tool";
+        mainGrid.ResumeLayout(false);
+        mainGrid.PerformLayout();
+        toolBar.ResumeLayout(false);
+        optionsGrid.ResumeLayout(false);
+        optionsGrid.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)pictureQrCode).EndInit();
+        imageMenu.ResumeLayout(false);
+        ResumeLayout(false);
+    }
+
+    private System.Windows.Forms.ToolTip tooltip;
+
+    private System.Windows.Forms.Button helpButton;
+
+    private System.Windows.Forms.Button copyAsImageButton;
+    private System.Windows.Forms.Button copyAsSvgButton;
+    private System.Windows.Forms.Button donateButton;
+
+    private System.Windows.Forms.Button saveButton;
+
+    private System.Windows.Forms.FlowLayoutPanel toolBar;
+
+    private System.Windows.Forms.SaveFileDialog saveAsDialog;
+
+    private System.Windows.Forms.ToolStripMenuItem saveAsToolStripMenuItem;
+    private System.Windows.Forms.ToolStripMenuItem copyAsImageToolStripMenuItem;
+    private System.Windows.Forms.ToolStripMenuItem copyAsSVGToolStripMenuItem;
+
+    private System.Windows.Forms.ContextMenuStrip imageMenu;
+
+    private System.Windows.Forms.Panel panelBg;
+    private System.Windows.Forms.Panel panelFg;
+
+    private System.Windows.Forms.OpenFileDialog openFileDialog;
+
+    private System.Windows.Forms.TextBox textLogoPath;
+
+    private System.Windows.Forms.ColorDialog colorDialog;
+
+    private System.Windows.Forms.ComboBox comboStyle;
+
+    private System.Windows.Forms.ComboBox comboLang;
+
+    private System.Windows.Forms.Label labelBackground;
+
+    private System.Windows.Forms.TableLayoutPanel mainGrid;
+
+    private System.Windows.Forms.TextBox textQrCode;
+
+    private System.Windows.Forms.PictureBox pictureQrCode;
+
+    private System.Windows.Forms.TableLayoutPanel optionsGrid;
+
+    #endregion
+}

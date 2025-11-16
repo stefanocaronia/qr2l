@@ -84,9 +84,9 @@ partial class Form1
         mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
         mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle());
         mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle());
-        mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 334F));
+        mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 367F));
         mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle());
-        mainGrid.Size = new System.Drawing.Size(369, 523);
+        mainGrid.Size = new System.Drawing.Size(369, 555);
         mainGrid.TabIndex = 0;
         mainGrid.UseWaitCursor = true;
         // 
@@ -259,7 +259,7 @@ partial class Form1
         pictureQrCode.Location = new System.Drawing.Point(1, 166);
         pictureQrCode.Margin = new System.Windows.Forms.Padding(0);
         pictureQrCode.Name = "pictureQrCode";
-        pictureQrCode.Size = new System.Drawing.Size(367, 334);
+        pictureQrCode.Size = new System.Drawing.Size(367, 367);
         pictureQrCode.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
         pictureQrCode.TabIndex = 1;
         pictureQrCode.TabStop = false;
@@ -302,7 +302,7 @@ partial class Form1
         bottomGrid.Controls.Add(detectedMode, 0, 0);
         bottomGrid.Controls.Add(bottomRightPanel, 1, 0);
         bottomGrid.Dock = System.Windows.Forms.DockStyle.Fill;
-        bottomGrid.Location = new System.Drawing.Point(1, 501);
+        bottomGrid.Location = new System.Drawing.Point(1, 534);
         bottomGrid.Margin = new System.Windows.Forms.Padding(0);
         bottomGrid.Name = "bottomGrid";
         bottomGrid.Padding = new System.Windows.Forms.Padding(2, 0, 4, 0);
@@ -367,7 +367,7 @@ partial class Form1
         // 
         AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
         AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-        ClientSize = new System.Drawing.Size(369, 523);
+        ClientSize = new System.Drawing.Size(369, 555);
         Controls.Add(mainGrid);
         FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
         Icon = ((System.Drawing.Icon)resources.GetObject("$this.Icon"));

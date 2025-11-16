@@ -49,6 +49,10 @@ partial class Form1
         saveAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
         copyAsImageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
         copyAsSVGToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+        bottomGrid = new System.Windows.Forms.TableLayoutPanel();
+        detectedMode = new System.Windows.Forms.Label();
+        bottomRightPanel = new System.Windows.Forms.FlowLayoutPanel();
+        buttonRepo = new System.Windows.Forms.Button();
         colorDialog = new System.Windows.Forms.ColorDialog();
         openFileDialog = new System.Windows.Forms.OpenFileDialog();
         saveAsDialog = new System.Windows.Forms.SaveFileDialog();
@@ -58,6 +62,8 @@ partial class Form1
         optionsGrid.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pictureQrCode).BeginInit();
         imageMenu.SuspendLayout();
+        bottomGrid.SuspendLayout();
+        bottomRightPanel.SuspendLayout();
         SuspendLayout();
         // 
         // mainGrid
@@ -69,15 +75,17 @@ partial class Form1
         mainGrid.Controls.Add(optionsGrid, 0, 1);
         mainGrid.Controls.Add(textQrCode, 0, 2);
         mainGrid.Controls.Add(pictureQrCode, 0, 3);
+        mainGrid.Controls.Add(bottomGrid, 0, 4);
         mainGrid.Dock = System.Windows.Forms.DockStyle.Fill;
         mainGrid.Location = new System.Drawing.Point(0, 0);
         mainGrid.Margin = new System.Windows.Forms.Padding(0);
         mainGrid.Name = "mainGrid";
-        mainGrid.RowCount = 4;
+        mainGrid.RowCount = 5;
         mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 35F));
         mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle());
         mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle());
-        mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 300F));
+        mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 334F));
+        mainGrid.RowStyles.Add(new System.Windows.Forms.RowStyle());
         mainGrid.Size = new System.Drawing.Size(369, 523);
         mainGrid.TabIndex = 0;
         mainGrid.UseWaitCursor = true;
@@ -253,7 +261,7 @@ partial class Form1
         pictureQrCode.Location = new System.Drawing.Point(1, 166);
         pictureQrCode.Margin = new System.Windows.Forms.Padding(0);
         pictureQrCode.Name = "pictureQrCode";
-        pictureQrCode.Size = new System.Drawing.Size(367, 356);
+        pictureQrCode.Size = new System.Drawing.Size(367, 334);
         pictureQrCode.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
         pictureQrCode.TabIndex = 1;
         pictureQrCode.TabStop = false;
@@ -288,6 +296,66 @@ partial class Form1
         copyAsSVGToolStripMenuItem.Size = new System.Drawing.Size(154, 22);
         copyAsSVGToolStripMenuItem.Text = "Copy As SVG";
         // 
+        // bottomGrid
+        // 
+        bottomGrid.ColumnCount = 2;
+        bottomGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+        bottomGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+        bottomGrid.Controls.Add(detectedMode, 0, 0);
+        bottomGrid.Controls.Add(bottomRightPanel, 1, 0);
+        bottomGrid.Dock = System.Windows.Forms.DockStyle.Fill;
+        bottomGrid.Location = new System.Drawing.Point(1, 501);
+        bottomGrid.Margin = new System.Windows.Forms.Padding(0);
+        bottomGrid.Name = "bottomGrid";
+        bottomGrid.Padding = new System.Windows.Forms.Padding(2, 0, 4, 0);
+        bottomGrid.RowCount = 1;
+        bottomGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+        bottomGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+        bottomGrid.Size = new System.Drawing.Size(367, 21);
+        bottomGrid.TabIndex = 5;
+        bottomGrid.UseWaitCursor = true;
+        // 
+        // detectedMode
+        // 
+        detectedMode.Dock = System.Windows.Forms.DockStyle.Fill;
+        detectedMode.Location = new System.Drawing.Point(5, 0);
+        detectedMode.Name = "detectedMode";
+        detectedMode.Size = new System.Drawing.Size(174, 21);
+        detectedMode.TabIndex = 0;
+        detectedMode.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+        detectedMode.UseWaitCursor = true;
+        // 
+        // bottomRightPanel
+        // 
+        bottomRightPanel.AutoSize = true;
+        bottomRightPanel.Controls.Add(buttonRepo);
+        bottomRightPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+        bottomRightPanel.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+        bottomRightPanel.Location = new System.Drawing.Point(182, 0);
+        bottomRightPanel.Margin = new System.Windows.Forms.Padding(0);
+        bottomRightPanel.Name = "bottomRightPanel";
+        bottomRightPanel.Size = new System.Drawing.Size(181, 21);
+        bottomRightPanel.TabIndex = 1;
+        bottomRightPanel.UseWaitCursor = true;
+        // 
+        // buttonRepo
+        // 
+        buttonRepo.BackColor = System.Drawing.Color.Transparent;
+        buttonRepo.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+        buttonRepo.FlatAppearance.BorderSize = 0;
+        buttonRepo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+        buttonRepo.ForeColor = System.Drawing.Color.Transparent;
+        buttonRepo.Image = global::qr2l.GUI.Properties.Resources.git;
+        buttonRepo.Location = new System.Drawing.Point(163, 0);
+        buttonRepo.Margin = new System.Windows.Forms.Padding(0);
+        buttonRepo.Name = "buttonRepo";
+        buttonRepo.Padding = new System.Windows.Forms.Padding(1);
+        buttonRepo.Size = new System.Drawing.Size(18, 18);
+        buttonRepo.TabIndex = 0;
+        buttonRepo.UseVisualStyleBackColor = false;
+        buttonRepo.UseWaitCursor = true;
+        buttonRepo.Click += buttonRepo_Click;
+        // 
         // openFileDialog
         // 
         openFileDialog.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp;*.gif";
@@ -315,8 +383,19 @@ partial class Form1
         optionsGrid.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)pictureQrCode).EndInit();
         imageMenu.ResumeLayout(false);
+        bottomGrid.ResumeLayout(false);
+        bottomGrid.PerformLayout();
+        bottomRightPanel.ResumeLayout(false);
         ResumeLayout(false);
     }
+
+    private System.Windows.Forms.Button buttonRepo;
+
+    private System.Windows.Forms.FlowLayoutPanel bottomRightPanel;
+
+    private System.Windows.Forms.Label detectedMode;
+
+    private System.Windows.Forms.TableLayoutPanel bottomGrid;
 
     private System.Windows.Forms.Panel spacer;
 

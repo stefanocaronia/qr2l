@@ -27,7 +27,7 @@ internal class Program
             byte[] data = QrGenerator.Generate(content, format, options);
 
             File.WriteAllBytes(output, data);
-            ShowSuccess($"✅ QR Code generated: {output}");
+            ShowSuccess($"✅  QR Code generated: {output}");
             ShowOptionsInfo(options);
         } catch (Exception ex) {
             ShowError("❌ Error generating QR Code:");
@@ -48,7 +48,7 @@ internal class Program
         ShowInfo("  --logo=<path>                 Path to logo image file");
         ShowInfo("  --pixels-per-module=<n>       Size of each module in pixels (default: 20)");
         ShowInfo("  --shape=<shape>               Pixel shape: square, circle (default: square)");
-        ShowInfo("  --payload-mode=<mode>         Payload mode: text, url, mail, sms, phone, wifi, geolocation, contact, event, whatsapp (default: text)");
+        ShowInfo("  --payload-mode=<mode>         Payload mode: auto, text, url, mail, sms, phone, wifi, geolocation, contact, event, whatsapp (default: auto)");
         ShowInfo("  --wifi-auth=<type>            WiFi authentication: wpa, wep, nopass (default: wpa)");
         ShowInfo("  --wifi-hidden                 Mark WiFi network as hidden");
         ShowInfo("");
@@ -195,6 +195,7 @@ internal class Program
     private static PayloadMode ParsePayloadMode(string? value)
     {
         return value?.ToLower() switch {
+            "auto" => PayloadMode.Auto,
             "text" => PayloadMode.Text,
             "url" => PayloadMode.Url,
             "mail" => PayloadMode.Mail,
@@ -205,7 +206,7 @@ internal class Program
             "contact" or "vcard" => PayloadMode.ContactData,
             "event" or "calendar" => PayloadMode.Event,
             "whatsapp" or "wa" => PayloadMode.WhatsApp,
-            var _ => PayloadMode.Text
+            var _ => PayloadMode.Auto
         };
     }
 

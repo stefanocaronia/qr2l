@@ -1,6 +1,0 @@
-﻿- [ ] contextual menu on image: Save As, Copy image to clipboard, Copy svg to clipboard
-- [ ] Localization support
-- [x] qr code style
-- [ ] buttons or no buttons?
-- [ ] support button
-- [ ] help button

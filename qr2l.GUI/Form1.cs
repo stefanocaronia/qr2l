@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Globalization;
 using qr2l.Core;
 using Timer = System.Windows.Forms.Timer;
 
@@ -11,6 +10,8 @@ public partial class Form1 : Form
 
     private const float RefreshDelay = 0.1f;
     private const string DonateUrl = "https://paypal.me/stefanocaronia";
+    private const string LicenseUrl = "https://creativecommons.org/licenses/by-sa/4.0/";
+    private const string RepoUrl = "https://github.com/stefanocaronia/qr2l";
 
     private readonly Timer debounceTimer;
     private byte[]? pngData;
@@ -50,7 +51,7 @@ public partial class Form1 : Form
     private void RefreshButtonStates()
     {
         bool hasData = pngData != null || svgData != null;
-        
+
         saveButton.Enabled = hasData;
         copyAsImageButton.Enabled = hasData;
         copyAsSvgButton.Enabled = hasData;
@@ -86,13 +87,15 @@ public partial class Form1 : Form
         } catch {
             ClearImageData();
         }
-        
+
+        detectedMode.Text = QrGenerator.DetectPayloadMode(text).ToString();
         RefreshButtonStates();
     }
 
     private QrCodeOptions CreateQrCodeOptions()
     {
         return new QrCodeOptions {
+            payloadMode = PayloadMode.Auto,
             darkColor = fgColor,
             lightColor = bgColor,
             logo = logoBitmap,
@@ -183,7 +186,7 @@ public partial class Form1 : Form
         }
 
         try {
-            var options = CreateQrCodeOptions();
+            QrCodeOptions options = CreateQrCodeOptions();
             byte[] data = QrGenerator.Generate(text, format, options);
             File.WriteAllBytes(path, data);
         } catch (Exception ex) {
@@ -305,8 +308,13 @@ public partial class Form1 : Form
         }
     }
 
-    private void circleStyle_CheckedChanged(object sender, EventArgs e)
+    private void buttonRepo_Click(object sender, EventArgs e)
     {
-        throw new System.NotImplementedException();
+        var psi = new ProcessStartInfo {
+            FileName = RepoUrl,
+            UseShellExecute = true
+        };
+
+        Process.Start(psi);
     }
 }

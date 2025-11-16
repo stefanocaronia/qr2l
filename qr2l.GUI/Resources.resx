@@ -74,4 +74,7 @@
   <data name="help" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\help.png;System.Drawing.Bitmap, System.Drawing.Common, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</value>
   </data>
+  <data name="git" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Resources\git.png;System.Drawing.Bitmap, System.Drawing.Common, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</value>
+  </data>
 </root>

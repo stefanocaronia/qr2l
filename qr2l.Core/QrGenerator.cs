@@ -9,6 +9,10 @@ public static class QrGenerator
 {
     public static byte[] Generate(string text, ExportFormat format, QrCodeOptions? options = null)
     {
+        if (string.IsNullOrWhiteSpace(text)) {
+            throw new ArgumentException("Text cannot be null or empty.", nameof(text));
+        }
+
         options ??= new QrCodeOptions();
 
         string payload = PreparePayload(text, options.payloadMode, options);
@@ -34,6 +38,10 @@ public static class QrGenerator
 
     public static string GenerateSvgString(string text, QrCodeOptions? options = null)
     {
+        if (string.IsNullOrWhiteSpace(text)) {
+            throw new ArgumentException("Text cannot be null or empty.", nameof(text));
+        }
+
         options ??= new QrCodeOptions();
 
         string payload = PreparePayload(text, options.payloadMode, options);
@@ -59,6 +67,10 @@ public static class QrGenerator
 
     private static string PreparePayload(string text, PayloadMode mode, QrCodeOptions? options = null)
     {
+        if (mode == PayloadMode.Auto) {
+            mode = DetectPayloadMode(text);
+        }
+        
         return mode switch {
             PayloadMode.Text => text,
             PayloadMode.Url => text.StartsWith("http://") || text.StartsWith("https://") ? text : $"https://{text}",
@@ -74,9 +86,110 @@ public static class QrGenerator
         };
     }
     
+    public static PayloadMode DetectPayloadMode(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) {
+            return PayloadMode.Text;
+        }
+        
+        text = text.Trim();
+        
+        // Email detection (must be before URL detection)
+        if (text.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)) {
+            return PayloadMode.Mail;
+        }
+        
+        if (text.Contains('@') && !text.Contains(';')) {
+            string[] atParts = text.Split('@');
+            if (atParts.Length == 2 && atParts[1].Contains('.') && !atParts[1].Contains(' ')) {
+                return PayloadMode.Mail;
+            }
+        }
+        
+        // URL detection
+        if (text.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            text.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+            text.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ||
+            (text.Contains('.') && !text.Contains(' ') && !text.Contains(';') && !text.Contains('@') &&
+             (text.EndsWith(".com") || text.EndsWith(".net") || text.EndsWith(".org") || 
+              text.EndsWith(".io") || text.EndsWith(".it") || text.Contains(".com/") || 
+              text.Contains(".net/") || text.Contains(".org/") || text.Contains(".io/")))) {
+            return PayloadMode.Url;
+        }
+        
+        // Geolocation detection: lat,lon format (decimals with point as separator)
+        if (text.Contains(',') && !text.Contains(';')) {
+            string[] parts = text.Split(',');
+            if (parts.Length >= 2 && parts.Length <= 3) {
+                if (double.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double lat) && 
+                    double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double lon)) {
+                    if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+                        return PayloadMode.Geolocation;
+                    }
+                }
+            }
+        }
+        
+        // Phone detection: only digits, spaces, +, -, (, )
+        string phonePattern = text.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "");
+        if (phonePattern.Length >= 7 && phonePattern.All(char.IsDigit) && !text.Contains(';') && !text.Contains(',')) {
+            return PayloadMode.Phone;
+        }
+        
+        // Structured data with semicolons
+        if (text.Contains(';')) {
+            string[] parts = text.Split(';');
+            
+            // WhatsApp detection: starts with + followed by digits
+            if (parts.Length >= 1 && parts[0].Trim().StartsWith("+") && 
+                parts[0].Trim().Substring(1).Replace(" ", "").All(char.IsDigit)) {
+                return PayloadMode.WhatsApp;
+            }
+            
+            // SMS detection: phone number followed by message
+            string firstPart = parts[0].Trim().Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "");
+            if (firstPart.Length >= 7 && firstPart.All(char.IsDigit)) {
+                return PayloadMode.SMS;
+            }
+            
+            // Event detection: contains date-like patterns (ISO format)
+            if (parts.Length >= 3) {
+                foreach (string part in parts) {
+                    if (DateTime.TryParse(part.Trim(), out _)) {
+                        return PayloadMode.Event;
+                    }
+                }
+            }
+            
+            // ContactData detection: 2+ parts, looks like name/contact info
+            if (parts.Length >= 2 && parts.Length <= 4) {
+                bool hasEmail = parts.Any(p => p.Contains('@'));
+                bool hasPhone = parts.Any(p => {
+                    string clean = p.Trim().Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "");
+                    return clean.Length >= 7 && clean.All(char.IsDigit);
+                });
+                
+                if (hasEmail || hasPhone) {
+                    return PayloadMode.ContactData;
+                }
+            }
+            
+            // WiFi detection: simple SSID;password pattern (fallback for 2 parts)
+            if (parts.Length == 2 && !parts[0].Contains('@') && !parts[0].All(char.IsDigit)) {
+                return PayloadMode.WiFi;
+            }
+        }
+        
+        // Default to Text
+        return PayloadMode.Text;
+    }
+    
     private static string PrepareMailPayload(string text)
     {
-        // Format: email or email;subject;body
+        if (text.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)) {
+            text = text.Substring(7);
+        }
+        
         string[] parts = text.Split(';');
         string email = parts[0].Trim();
         string subject = parts.Length > 1 ? parts[1].Trim() : string.Empty;
@@ -165,7 +278,6 @@ public static class QrGenerator
     
     private static string PrepareWhatsAppPayload(string text)
     {
-        // Format: number;message
         string[] parts = text.Split(';');
         if (parts.Length < 1) {
             throw new ArgumentException("WhatsApp payload must be in format: number;message");

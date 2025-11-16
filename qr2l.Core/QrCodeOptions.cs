@@ -12,7 +12,7 @@ public class QrCodeOptions
     public Image? logo { get; set; }
     public int pixelsPerModule { get; set; } = 20;
     public PixelShape shape { get; set; } = PixelShape.Square;
-    public PayloadMode payloadMode { get; set; } = PayloadMode.Text;
+    public PayloadMode payloadMode { get; set; } = PayloadMode.Auto;
     public WiFiAuthenticationType wifiAuthType { get; set; } = WiFiAuthenticationType.WPA;
     public bool wifiHidden { get; set; } = false;
 
@@ -37,6 +37,7 @@ public enum PixelShape
 
 public enum PayloadMode
 {
+    Auto,
     Text,
     Url,
     Mail,

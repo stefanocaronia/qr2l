@@ -42,7 +42,7 @@ partial class Form1
         optionsGrid = new System.Windows.Forms.TableLayoutPanel();
         panelFg = new System.Windows.Forms.Panel();
         panelBg = new System.Windows.Forms.Panel();
-        textLogoPath = new System.Windows.Forms.TextBox();
+        logoPath = new System.Windows.Forms.Label();
         textQrCode = new System.Windows.Forms.TextBox();
         pictureQrCode = new System.Windows.Forms.PictureBox();
         imageMenu = new System.Windows.Forms.ContextMenuStrip(components);
@@ -183,7 +183,7 @@ partial class Form1
         optionsGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
         optionsGrid.Controls.Add(panelFg, 0, 0);
         optionsGrid.Controls.Add(panelBg, 1, 0);
-        optionsGrid.Controls.Add(textLogoPath, 2, 0);
+        optionsGrid.Controls.Add(logoPath, 2, 0);
         optionsGrid.Dock = System.Windows.Forms.DockStyle.Fill;
         optionsGrid.Location = new System.Drawing.Point(1, 37);
         optionsGrid.Margin = new System.Windows.Forms.Padding(0);
@@ -220,22 +220,20 @@ partial class Form1
         panelBg.UseWaitCursor = true;
         panelBg.Click += panelBg_Click;
         // 
-        // textLogoPath
+        // logoPath
         // 
-        textLogoPath.BackColor = System.Drawing.SystemColors.ControlLight;
-        textLogoPath.Cursor = System.Windows.Forms.Cursors.WaitCursor;
-        textLogoPath.Dock = System.Windows.Forms.DockStyle.Fill;
-        textLogoPath.Location = new System.Drawing.Point(185, 3);
-        textLogoPath.Name = "textLogoPath";
-        textLogoPath.ReadOnly = true;
-        textLogoPath.Size = new System.Drawing.Size(179, 23);
-        textLogoPath.TabIndex = 11;
-        textLogoPath.Text = "(No Logo)";
-        textLogoPath.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-        tooltip.SetToolTip(textLogoPath, "The logo. Click again to remove.");
-        textLogoPath.UseWaitCursor = true;
-        textLogoPath.WordWrap = false;
-        textLogoPath.Click += textLogoPath_Click;
+        logoPath.AutoSize = true;
+        logoPath.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+        logoPath.Dock = System.Windows.Forms.DockStyle.Fill;
+        logoPath.Location = new System.Drawing.Point(185, 3);
+        logoPath.Margin = new System.Windows.Forms.Padding(3);
+        logoPath.Name = "logoPath";
+        logoPath.Size = new System.Drawing.Size(179, 23);
+        logoPath.TabIndex = 2;
+        logoPath.Text = "Insert a logo";
+        logoPath.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+        logoPath.UseWaitCursor = true;
+        logoPath.Click += logoPath_Click;
         // 
         // textQrCode
         // 
@@ -389,6 +387,8 @@ partial class Form1
         ResumeLayout(false);
     }
 
+    private System.Windows.Forms.Label logoPath;
+
     private System.Windows.Forms.Button buttonRepo;
 
     private System.Windows.Forms.FlowLayoutPanel bottomRightPanel;
@@ -423,8 +423,6 @@ partial class Form1
     private System.Windows.Forms.Panel panelFg;
 
     private System.Windows.Forms.OpenFileDialog openFileDialog;
-
-    private System.Windows.Forms.TextBox textLogoPath;
 
     private System.Windows.Forms.ColorDialog colorDialog;
 

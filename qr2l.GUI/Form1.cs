@@ -12,6 +12,9 @@ public partial class Form1 : Form
     private const string DonateUrl = "https://paypal.me/stefanocaronia";
     private const string LicenseUrl = "https://creativecommons.org/licenses/by-sa/4.0/";
     private const string RepoUrl = "https://github.com/stefanocaronia/qr2l";
+    private const string SetLogoText = "Set the logo";
+    private const string RemoveLogoText = "Remove the logo";
+    private const string Version = "1.0";
 
     private readonly Timer debounceTimer;
     private byte[]? pngData;
@@ -27,6 +30,8 @@ public partial class Form1 : Form
     {
         InitializeComponent();
 
+        Text = $"qr2l v{Version} - QR Code Tool";
+
         UseWaitCursor = false;
         mainGrid.UseWaitCursor = false;
         textQrCode.UseWaitCursor = false;
@@ -41,9 +46,12 @@ public partial class Form1 : Form
 
         panelFg.Cursor = Cursors.Hand;
         panelBg.Cursor = Cursors.Hand;
-        textLogoPath.Cursor = Cursors.Hand;
+        logoPath.Cursor = Cursors.Hand;
+
+        logoPath.Text = SetLogoText;
 
         saveAsDialog.Filter = BuildFilterFromEnum();
+        
 
         RefreshButtonStates();
     }
@@ -133,9 +141,9 @@ public partial class Form1 : Form
             using var ms = new MemoryStream(pngData);
             using Image image = Image.FromStream(ms);
             Clipboard.SetImage(image);
-            MessageBox.Show("QR Code copied to clipboard!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("QR Code copied to clipboard as an image!", "Copy Image to Clipboard", MessageBoxButtons.OK, MessageBoxIcon.Information);
         } catch (Exception ex) {
-            MessageBox.Show($"Error copying to clipboard: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show($"Error copying image to clipboard: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -147,7 +155,7 @@ public partial class Form1 : Form
 
         try {
             Clipboard.SetText(svgData);
-            MessageBox.Show("SVG QR Code copied to clipboard!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("SVG QR Code copied to clipboard as text!", "Copy SVG to Clipboard", MessageBoxButtons.OK, MessageBoxIcon.Information);
         } catch (Exception ex) {
             MessageBox.Show($"Error copying SVG to clipboard: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
@@ -216,19 +224,19 @@ public partial class Form1 : Form
         GenerateQrPreview();
     }
 
-    private void textLogoPath_Click(object sender, EventArgs e)
+    private void logoPath_Click(object sender, EventArgs e)
     {
-        if (textLogoPath.Text != string.Empty) {
+        if (logoPath.Text == RemoveLogoText) {
             ClearLogo();
         } else {
             OpenFileDialog? dialog = openFileDialog;
 
-            dialog.Title = "Select logo image";
+            dialog.Title = SetLogoText;
             dialog.Filter = "Image files|*.png;*.jpg;*.jpeg;*.bmp;*.gif";
 
             if (dialog.ShowDialog() == DialogResult.OK) {
                 logoBitmap = new Bitmap(dialog.FileName);
-                textLogoPath.Text = Path.GetFileName(dialog.FileName);
+                logoPath.Text = RemoveLogoText;
             }
         }
 
@@ -238,7 +246,7 @@ public partial class Form1 : Form
     private void ClearLogo()
     {
         logoBitmap = null;
-        textLogoPath.Text = "";
+        logoPath.Text = SetLogoText;
     }
 
     private void imageMenu_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
@@ -284,7 +292,7 @@ public partial class Form1 : Form
 
     private void helpButton_Click(object sender, EventArgs e)
     {
-        string helpText = "*** QR Code Generator Help ***\n\n" +
+        string helpText = $"*** qr2l v{Version} - QR Code Tool ***\n\n" +
             "- Enter the text you want to encode in the QR code in the text box.\n" +
             "- Choose foreground and background colors by clicking on the color panels.\n" +
             "- Optionally, add a logo by clicking on the logo box. Click again to clear the logo.\n" +

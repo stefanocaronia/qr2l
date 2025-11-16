@@ -1,12 +1,9 @@
 using System.Diagnostics;
 using System.Globalization;
 using qr2l.Core;
-using qr2l.GUI.Localization;
 using Timer = System.Windows.Forms.Timer;
 
 namespace qr2l.GUI;
-
-
 
 public partial class Form1 : Form
 {
@@ -38,9 +35,6 @@ public partial class Form1 : Form
         debounceTimer.Interval = (int)(1000f * RefreshDelay);
         debounceTimer.Tick += OnDebounceTimerTick;
 
-        comboStyle.DataSource = Enum.GetValues<PixelShape>();
-        comboStyle.SelectedIndexChanged += OnComboStyleSelectedIndexChanged;
-
         panelFg.BackColor = fgColor;
         panelBg.BackColor = bgColor;
 
@@ -49,13 +43,18 @@ public partial class Form1 : Form
         textLogoPath.Cursor = Cursors.Hand;
 
         saveAsDialog.Filter = BuildFilterFromEnum();
-        
-        InitializeLanguageCombo();
+
+        RefreshButtonStates();
     }
-    
-    private void InitializeLanguageCombo()
+
+    private void RefreshButtonStates()
     {
-        comboLang.DataSource = Enum.GetValues<Languages>();
+        bool hasData = pngData != null || svgData != null;
+        
+        saveButton.Enabled = hasData;
+        copyAsImageButton.Enabled = hasData;
+        copyAsSvgButton.Enabled = hasData;
+        imageMenu.Enabled = hasData;
     }
 
     private void OnTextQrCodeChanged(object sender, EventArgs e)
@@ -70,40 +69,55 @@ public partial class Form1 : Form
         GenerateQrPreview();
     }
 
-    private void OnComboStyleSelectedIndexChanged(object sender, EventArgs e)
-    {
-        GenerateQrPreview();
-    }
-
     private void GenerateQrPreview()
     {
         string text = textQrCode.Text.Trim();
 
         if (string.IsNullOrEmpty(text)) {
-            pictureQrCode.Image = null;
-            pngData = null;
-            svgData = null;
+            ClearImageData();
+            RefreshButtonStates();
             return;
         }
 
-        var options = new QrCodeOptions {
+        try {
+            QrCodeOptions options = CreateQrCodeOptions();
+            GeneratePngPreview(text, options);
+            GenerateSvgData(text, options);
+        } catch {
+            ClearImageData();
+        }
+        
+        RefreshButtonStates();
+    }
+
+    private QrCodeOptions CreateQrCodeOptions()
+    {
+        return new QrCodeOptions {
             darkColor = fgColor,
             lightColor = bgColor,
             logo = logoBitmap,
-            shape = (PixelShape)comboStyle.SelectedItem!,
+            shape = PixelShape.Square,
             pixelsPerModule = 20
         };
+    }
 
-        try {
-            pngData = QrGenerator.Generate(text, ExportFormat.Png, options);
-            using var ms = new MemoryStream(pngData);
-            pictureQrCode.Image = Image.FromStream(ms);
-            svgData = QrGenerator.GenerateSvgString(text);
-        } catch (Exception ex) {
-            pictureQrCode.Image = null;
-            pngData = null;
-            svgData = null;
-        }
+    private void GeneratePngPreview(string text, QrCodeOptions options)
+    {
+        pngData = QrGenerator.Generate(text, ExportFormat.Png, options);
+        using var memoryStream = new MemoryStream(pngData);
+        pictureQrCode.Image = Image.FromStream(memoryStream);
+    }
+
+    private void GenerateSvgData(string text, QrCodeOptions options)
+    {
+        svgData = QrGenerator.GenerateSvgString(text, options);
+    }
+
+    private void ClearImageData()
+    {
+        pictureQrCode.Image = null;
+        pngData = null;
+        svgData = null;
     }
 
     private void CopyImageToClipboard()
@@ -169,14 +183,7 @@ public partial class Form1 : Form
         }
 
         try {
-            var options = new QrCodeOptions {
-                darkColor = fgColor,
-                lightColor = bgColor,
-                logo = logoBitmap,
-                shape = (PixelShape)comboStyle.SelectedItem!,
-                pixelsPerModule = 20
-            };
-
+            var options = CreateQrCodeOptions();
             byte[] data = QrGenerator.Generate(text, format, options);
             File.WriteAllBytes(path, data);
         } catch (Exception ex) {
@@ -275,11 +282,9 @@ public partial class Form1 : Form
     private void helpButton_Click(object sender, EventArgs e)
     {
         string helpText = "*** QR Code Generator Help ***\n\n" +
-            "- Choose your language.\n" +
             "- Enter the text you want to encode in the QR code in the text box.\n" +
-            "- Select the desired pixel style from the dropdown.\n" +
             "- Choose foreground and background colors by clicking on the color panels.\n" +
-            "- Optionally, add a logo by clicking on the logo path text box. Click again to clear the logo.\n" +
+            "- Optionally, add a logo by clicking on the logo box. Click again to clear the logo.\n" +
             "\n" +
             "The QR code preview will update automatically.\n" +
             "Use the buttons to save the QR code or copy it to the clipboard as an image or SVG.";
@@ -300,73 +305,8 @@ public partial class Form1 : Form
         }
     }
 
-    private void comboLang_SelectedIndexChanged(object sender, EventArgs e)
+    private void circleStyle_CheckedChanged(object sender, EventArgs e)
     {
-        if (comboLang.SelectedItem == null) {
-            return;
-        }
-        
-        var selected = (Languages)comboLang.SelectedItem;
-        var culture = new CultureInfo(selected.ToCultureCode());
-
-        Thread.CurrentThread.CurrentUICulture = culture;
-        Thread.CurrentThread.CurrentCulture = culture;
-
-        ReloadUI();
-    }
-    
-    private void ReloadUI()
-    {
-        // Save current state before reloading
-        string currentText = textQrCode.Text;
-        Color currentFgColor = fgColor;
-        Color currentBgColor = bgColor;
-        Bitmap? currentLogo = logoBitmap;
-        string currentLogoPath = textLogoPath.Text;
-        object currentStyleItem = comboStyle.SelectedItem!;
-        object currentLanguageItem = comboLang.SelectedItem!;
-        
-        var oldBounds = this.Bounds;
-
-        Controls.Clear();
-        InitializeComponent();
-
-        this.Bounds = oldBounds;
-
-        // Restore state
-        fgColor = currentFgColor;
-        bgColor = currentBgColor;
-        logoBitmap = currentLogo;
-        
-        // Reconfigure controls
-        UseWaitCursor = false;
-        mainGrid.UseWaitCursor = false;
-        textQrCode.UseWaitCursor = false;
-        pictureQrCode.UseWaitCursor = false;
-        
-        debounceTimer.Tick += OnDebounceTimerTick;
-        
-        comboStyle.DataSource = Enum.GetValues<PixelShape>();
-        comboStyle.SelectedIndexChanged += OnComboStyleSelectedIndexChanged;
-        comboStyle.SelectedItem = currentStyleItem;
-        
-        panelFg.BackColor = fgColor;
-        panelBg.BackColor = bgColor;
-        
-        panelFg.Cursor = Cursors.Hand;
-        panelBg.Cursor = Cursors.Hand;
-        textLogoPath.Cursor = Cursors.Hand;
-        
-        saveAsDialog.Filter = BuildFilterFromEnum();
-        
-        InitializeLanguageCombo();
-        comboLang.SelectedItem = currentLanguageItem;
-        
-        // Restore text and logo path
-        textQrCode.Text = currentText;
-        textLogoPath.Text = currentLogoPath;
-        
-        // Regenerate preview
-        GenerateQrPreview();
+        throw new System.NotImplementedException();
     }
 }

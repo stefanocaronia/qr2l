@@ -30,16 +30,16 @@ partial class Form1
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
+        System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
         mainGrid = new System.Windows.Forms.TableLayoutPanel();
         toolBar = new System.Windows.Forms.FlowLayoutPanel();
         saveButton = new System.Windows.Forms.Button();
         copyAsImageButton = new System.Windows.Forms.Button();
         copyAsSvgButton = new System.Windows.Forms.Button();
+        spacer = new System.Windows.Forms.Panel();
         donateButton = new System.Windows.Forms.Button();
-        comboLang = new System.Windows.Forms.ComboBox();
         helpButton = new System.Windows.Forms.Button();
         optionsGrid = new System.Windows.Forms.TableLayoutPanel();
-        comboStyle = new System.Windows.Forms.ComboBox();
         panelFg = new System.Windows.Forms.Panel();
         panelBg = new System.Windows.Forms.Panel();
         textLogoPath = new System.Windows.Forms.TextBox();
@@ -87,8 +87,8 @@ partial class Form1
         toolBar.Controls.Add(saveButton);
         toolBar.Controls.Add(copyAsImageButton);
         toolBar.Controls.Add(copyAsSvgButton);
+        toolBar.Controls.Add(spacer);
         toolBar.Controls.Add(donateButton);
-        toolBar.Controls.Add(comboLang);
         toolBar.Controls.Add(helpButton);
         toolBar.Dock = System.Windows.Forms.DockStyle.Fill;
         toolBar.Location = new System.Drawing.Point(4, 4);
@@ -133,10 +133,18 @@ partial class Form1
         copyAsSvgButton.UseWaitCursor = true;
         copyAsSvgButton.Click += copyAsSvgButton_Click;
         // 
+        // spacer
+        // 
+        spacer.Location = new System.Drawing.Point(93, 3);
+        spacer.Name = "spacer";
+        spacer.Size = new System.Drawing.Size(205, 24);
+        spacer.TabIndex = 6;
+        spacer.UseWaitCursor = true;
+        // 
         // donateButton
         // 
         donateButton.Image = global::qr2l.GUI.Properties.Resources.heart;
-        donateButton.Location = new System.Drawing.Point(93, 3);
+        donateButton.Location = new System.Drawing.Point(304, 3);
         donateButton.Name = "donateButton";
         donateButton.Size = new System.Drawing.Size(24, 24);
         donateButton.TabIndex = 3;
@@ -144,17 +152,6 @@ partial class Form1
         donateButton.UseVisualStyleBackColor = true;
         donateButton.UseWaitCursor = true;
         donateButton.Click += donateButton_Click;
-        // 
-        // comboLang
-        // 
-        comboLang.Dock = System.Windows.Forms.DockStyle.Right;
-        comboLang.FormattingEnabled = true;
-        comboLang.Location = new System.Drawing.Point(123, 3);
-        comboLang.Name = "comboLang";
-        comboLang.Size = new System.Drawing.Size(205, 23);
-        comboLang.TabIndex = 4;
-        tooltip.SetToolTip(comboLang, "Sets the language of the tool");
-        comboLang.UseWaitCursor = true;
         // 
         // helpButton
         // 
@@ -171,36 +168,23 @@ partial class Form1
         // optionsGrid
         // 
         optionsGrid.AutoSize = true;
-        optionsGrid.ColumnCount = 4;
+        optionsGrid.ColumnCount = 3;
         optionsGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
         optionsGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-        optionsGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-        optionsGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-        optionsGrid.Controls.Add(comboStyle, 2, 0);
+        optionsGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+        optionsGrid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
         optionsGrid.Controls.Add(panelFg, 0, 0);
         optionsGrid.Controls.Add(panelBg, 1, 0);
-        optionsGrid.Controls.Add(textLogoPath, 3, 0);
+        optionsGrid.Controls.Add(textLogoPath, 2, 0);
         optionsGrid.Dock = System.Windows.Forms.DockStyle.Fill;
         optionsGrid.Location = new System.Drawing.Point(1, 37);
         optionsGrid.Margin = new System.Windows.Forms.Padding(0);
         optionsGrid.Name = "optionsGrid";
         optionsGrid.RowCount = 1;
         optionsGrid.RowStyles.Add(new System.Windows.Forms.RowStyle());
-        optionsGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
         optionsGrid.Size = new System.Drawing.Size(367, 29);
         optionsGrid.TabIndex = 3;
         optionsGrid.UseWaitCursor = true;
-        // 
-        // comboStyle
-        // 
-        comboStyle.Dock = System.Windows.Forms.DockStyle.Fill;
-        comboStyle.FormattingEnabled = true;
-        comboStyle.Location = new System.Drawing.Point(185, 3);
-        comboStyle.Name = "comboStyle";
-        comboStyle.Size = new System.Drawing.Size(85, 23);
-        comboStyle.TabIndex = 3;
-        tooltip.SetToolTip(comboStyle, "Sets the style of the pixels");
-        comboStyle.UseWaitCursor = true;
         // 
         // panelFg
         // 
@@ -233,10 +217,10 @@ partial class Form1
         textLogoPath.BackColor = System.Drawing.SystemColors.ControlLight;
         textLogoPath.Cursor = System.Windows.Forms.Cursors.WaitCursor;
         textLogoPath.Dock = System.Windows.Forms.DockStyle.Fill;
-        textLogoPath.Location = new System.Drawing.Point(276, 3);
+        textLogoPath.Location = new System.Drawing.Point(185, 3);
         textLogoPath.Name = "textLogoPath";
         textLogoPath.ReadOnly = true;
-        textLogoPath.Size = new System.Drawing.Size(88, 23);
+        textLogoPath.Size = new System.Drawing.Size(179, 23);
         textLogoPath.TabIndex = 11;
         textLogoPath.Text = "(No Logo)";
         textLogoPath.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
@@ -320,6 +304,7 @@ partial class Form1
         ClientSize = new System.Drawing.Size(369, 523);
         Controls.Add(mainGrid);
         FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+        Icon = ((System.Drawing.Icon)resources.GetObject("$this.Icon"));
         MaximizeBox = false;
         SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
         Text = "qr2l - QR Code Tool";
@@ -332,6 +317,8 @@ partial class Form1
         imageMenu.ResumeLayout(false);
         ResumeLayout(false);
     }
+
+    private System.Windows.Forms.Panel spacer;
 
     private System.Windows.Forms.ToolTip tooltip;
 
@@ -361,10 +348,6 @@ partial class Form1
     private System.Windows.Forms.TextBox textLogoPath;
 
     private System.Windows.Forms.ColorDialog colorDialog;
-
-    private System.Windows.Forms.ComboBox comboStyle;
-
-    private System.Windows.Forms.ComboBox comboLang;
 
     private System.Windows.Forms.Label labelBackground;
 

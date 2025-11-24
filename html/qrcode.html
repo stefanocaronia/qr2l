@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>qr2l - QR Code Tool Web</title>
+    
+    <!-- Tailwind CSS per lo styling rapido -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome per le icone -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- EasyQRCodeJS per generare QR con loghi e colori -->
+    <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.5.0/dist/easy.qrcode.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Override cursore per aree cliccabili */
+        .cursor-pointer { cursor: pointer; }
+        
+        /* Nascondi input file e color reali */
+        .hidden-input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* Stile area preview per centrare l'immagine canvas generata dalla libreria */
+        #qr-preview canvas {
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="p-2 h-screen overflow-hidden flex flex-col">
+
+    <!-- Main Container (replica Form1) -->
+    <div class="bg-white border border-gray-300 shadow-lg rounded-sm flex flex-col h-full max-w-md mx-auto w-full">
+        
+        <!-- Toolbar -->
+        <div class="flex items-center bg-gray-100 p-2 border-b border-gray-200 space-x-2">
+            <button onclick="saveImage()" class="p-2 hover:bg-gray-200 rounded" title="Salva QR Code">
+                <i class="fas fa-save text-blue-600"></i>
+            </button>
+            <button onclick="copyImage()" class="p-2 hover:bg-gray-200 rounded" title="Copia Immagine">
+                <i class="fas fa-clipboard text-gray-700"></i>
+            </button>
+            <!-- SVG non supportato nativamente in modo semplice con loghi lato client in JS puro quanto Canvas, 
+                 ma manteniamo il pulsante per fedeltà UI (mostrerà un alert) -->
+            <button onclick="copySvgWarning()" class="p-2 hover:bg-gray-200 rounded" title="Copia SVG (Solo testo)">
+                <i class="fas fa-puzzle-piece text-green-600"></i>
+            </button>
+            
+            <div class="flex-grow"></div>
+            
+            <button onclick="openDonate()" class="p-2 hover:bg-gray-200 rounded" title="Offrimi un caffè">
+                <i class="fas fa-heart text-red-500"></i>
+            </button>
+            <button onclick="showHelp()" class="p-2 hover:bg-gray-200 rounded" title="Aiuto">
+                <i class="fas fa-question-circle text-blue-500"></i>
+            </button>
+        </div>
+
+        <!-- Options Grid -->
+        <div class="grid grid-cols-3 gap-2 p-2 bg-gray-50 border-b border-gray-200 text-sm">
+            <!-- Foreground Color -->
+            <div class="relative group">
+                <div id="fg-preview" class="w-full h-8 border border-gray-400 cursor-pointer bg-black flex items-center justify-center text-xs text-white shadow-sm" onclick="document.getElementById('fg-color').click()">
+                    Colore Pixel
+                </div>
+                <input type="color" id="fg-color" class="hidden-input" value="#000000" onchange="updateColor('fg', this.value)">
+            </div>
+
+            <!-- Background Color -->
+            <div class="relative group">
+                <div id="bg-preview" class="w-full h-8 border border-gray-400 cursor-pointer bg-white flex items-center justify-center text-xs text-gray-800 shadow-sm" onclick="document.getElementById('bg-color').click()">
+                    Sfondo
+                </div>
+                <input type="color" id="bg-color" class="hidden-input" value="#ffffff" onchange="updateColor('bg', this.value)">
+            </div>
+
+            <!-- Logo Upload -->
+            <div class="relative group">
+                <div id="logo-btn" class="w-full h-8 border border-gray-400 cursor-pointer bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-xs text-gray-700 overflow-hidden whitespace-nowrap px-1" onclick="handleLogoClick()">
+                    Inserisci Logo
+                </div>
+                <input type="file" id="logo-upload" class="hidden-input" accept="image/*" onchange="handleLogoUpload(this)">
+            </div>
+        </div>
+
+        <!-- Text Input -->
+        <div class="p-2 flex-shrink-0">
+            <textarea id="qr-text" 
+                class="w-full h-24 p-2 border border-gray-300 rounded resize-none focus:outline-none focus:border-blue-500 text-sm font-mono"
+                placeholder="Inserisci qui il testo per il QR Code..."
+                oninput="debounceGenerate()"></textarea>
+        </div>
+
+        <!-- Preview Area -->
+        <div class="flex-grow bg-gray-200 flex items-center justify-center p-4 overflow-hidden relative">
+            <div id="qr-preview" class="bg-transparent">
+                <!-- QR Canvas will be injected here -->
+                <div class="text-gray-500 text-sm italic">In attesa di input...</div>
+            </div>
+        </div>
+
+        <!-- Footer / Status Bar -->
+        <div class="bg-gray-100 p-1 px-2 text-xs border-t border-gray-300 flex justify-between items-center h-8">
+            <span id="detected-mode" class="font-semibold text-gray-600">Text</span>
+            <button onclick="window.open('https://github.com/stefanocaronia/qr2l', '_blank')" class="text-gray-600 hover:text-black">
+                <i class="fab fa-github text-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Help (Hidden by default) -->
+    <div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-6 rounded shadow-xl max-w-lg w-full m-4">
+            <h3 class="font-bold text-lg mb-4">qr2l - Guida</h3>
+            <div class="text-sm space-y-2 overflow-y-auto max-h-64 text-gray-700">
+                <p>Inserisci il testo nella casella per generare il QR.</p>
+                <p>Clicca sui riquadri colore per cambiare i colori.</p>
+                <p>Clicca su "Inserisci Logo" per caricare un'immagine al centro.</p>
+                <hr class="my-2">
+                <strong>Formati Supportati (Rilevamento Auto):</strong>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>URL: http://, https://, www.</li>
+                    <li>Email: mailto: o email semplice</li>
+                    <li>WiFi: WIFI:S:NomeRete;P:Password; (o testo semplice per auto-format)</li>
+                    <li>Coordinate: lat,lon</li>
+                    <li>Telefono/SMS/WhatsApp</li>
+                </ul>
+            </div>
+            <button onclick="document.getElementById('help-modal').classList.add('hidden')" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700">Chiudi</button>
+        </div>
+    </div>
+
+    <script>
+        // --- State ---
+        let qrObject = null;
+        let debounceTimer;
+        let currentLogo = null;
+        let options = {
+            text: "",
+            width: 300,
+            height: 300,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H, // High error correction per permettere loghi
+            logo: null,
+            logoWidth: 80,
+            logoHeight: 80,
+            logoBackgroundColor: '#ffffff',
+            logoBackgroundTransparent: false,
+            quietZone: 10,
+            quietZoneColor: "transparent"
+        };
+
+        // --- Initialization ---
+        window.onload = () => {
+            // Init with placeholder text logic if needed, currently waits for input
+        };
+
+        // --- Core Logic (Ported from C#) ---
+
+        function debounceGenerate() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(generateQR, 100); // 100ms delay
+        }
+
+        function generateQR() {
+            const rawText = document.getElementById('qr-text').value;
+            const container = document.getElementById('qr-preview');
+            
+            // Clear previous
+            container.innerHTML = '';
+
+            if (!rawText.trim()) {
+                container.innerHTML = '<div class="text-gray-500 text-sm italic">In attesa di input...</div>';
+                document.getElementById('detected-mode').innerText = "Text";
+                return;
+            }
+
+            // 1. Detect Mode
+            const mode = detectPayloadMode(rawText);
+            document.getElementById('detected-mode').innerText = mode;
+
+            // 2. Prepare Payload (WiFi logic mainly)
+            let payload = rawText;
+            if (mode === 'WiFi' && !rawText.toUpperCase().startsWith('WIFI:')) {
+                // Basic conversion logic mimicking C# PrepareWiFiPayload simplified
+                // Assuming user typed "SSID;Password"
+                const parts = rawText.split(';');
+                const ssid = parts[0].trim();
+                const pass = parts.length > 1 ? parts[1].trim() : "";
+                const auth = pass ? "WPA" : "nopass";
+                payload = `WIFI:T:${auth};S:${ssid};P:${pass};;`;
+            }
+            // Add URL prefix if missing for URL mode
+            else if (mode === 'Url' && !rawText.match(/^https?:\/\//i) && !rawText.match(/^ftp:\/\//i)) {
+                payload = 'https://' + rawText;
+            }
+
+            // 3. Generate
+            options.text = payload;
+            options.logo = currentLogo; // base64 string or null
+            
+            // Using EasyQRCodeJS
+            try {
+                qrObject = new QRCode(container, options);
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div class="text-red-500">Errore generazione</div>';
+            }
+        }
+
+        // --- Payload Detection (Ported from QrGenerator.cs) ---
+        function detectPayloadMode(text) {
+            if (!text) return 'Text';
+            text = text.trim();
+
+            // URL Explicit
+            if (/^(http:\/\/|https:\/\/|ftp:\/\/|ftps:\/\/|file:\/\/)/i.test(text)) return 'Url';
+            
+            // Mailto
+            if (/^mailto:/i.test(text)) return 'Mail';
+            
+            // Simple Mail (contains @ and . and no spaces/semicolons)
+            if (text.includes('@') && !text.includes(';') && !text.includes(' ')) {
+                const parts = text.split('@');
+                if (parts.length === 2 && parts[1].includes('.')) return 'Mail';
+            }
+
+            // URL Implicit (www. or ends with common TLDs)
+            if (/^www\./i.test(text) || (text.includes('.') && !text.includes(' ') && !text.includes('@') && !text.includes(';'))) {
+                const commonTLDs = ['.com', '.net', '.org', '.io', '.it'];
+                if (commonTLDs.some(tld => text.endsWith(tld) || text.includes(tld + '/'))) return 'Url';
+            }
+
+            // WiFi
+            if (text.toUpperCase().startsWith('WIFI:')) return 'WiFi';
+
+            // Geo (lat,lon) - simplified regex
+            if (/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(text)) return 'Geolocation';
+
+            // Phone (mostly digits, min length 7)
+            const cleanPhone = text.replace(/[\s\-()+]/g, '');
+            if (cleanPhone.length >= 7 && /^\d+$/.test(cleanPhone) && !text.includes(';') && !text.includes(',')) return 'Phone';
+
+            // Semicolon based checks
+            if (text.includes(';')) {
+                const parts = text.split(';');
+                
+                // WhatsApp (+digits followed by text)
+                if (parts[0].trim().startsWith('+') && /^\d+$/.test(parts[0].trim().substring(1).replace(/\s/g, ''))) return 'WhatsApp';
+
+                // SMS (digits;message)
+                const firstClean = parts[0].trim().replace(/[\s\-()+]/g, '');
+                if (firstClean.length >= 7 && /^\d+$/.test(firstClean)) return 'SMS';
+
+                // Event (simple check for date usage) - skipping complex parsing in JS for brevity, fallback to Text usually works
+            }
+
+            return 'Text';
+        }
+
+        // --- UI Interactions ---
+
+        function updateColor(type, value) {
+            if (type === 'fg') {
+                options.colorDark = value;
+                document.getElementById('fg-preview').style.backgroundColor = value;
+                // Change text color of the preview box for contrast
+                document.getElementById('fg-preview').style.color = getContrastColor(value);
+            } else {
+                options.colorLight = value;
+                document.getElementById('bg-preview').style.backgroundColor = value;
+                document.getElementById('bg-preview').style.color = getContrastColor(value);
+                // Also update quiet zone to match background
+                options.logoBackgroundColor = value;
+            }
+            generateQR();
+        }
+
+        // Helper helper for text contrast
+        function getContrastColor(hexcolor) {
+            hexcolor = hexcolor.replace("#", "");
+            var r = parseInt(hexcolor.substr(0,2),16);
+            var g = parseInt(hexcolor.substr(2,2),16);
+            var b = parseInt(hexcolor.substr(4,2),16);
+            var yiq = ((r*299)+(g*587)+(b*114))/1000;
+            return (yiq >= 128) ? 'black' : 'white';
+        }
+
+        function handleLogoClick() {
+            const btn = document.getElementById('logo-btn');
+            if (btn.innerText === "Rimuovi Logo") {
+                currentLogo = null;
+                btn.innerText = "Inserisci Logo";
+                btn.classList.remove('bg-red-100', 'text-red-700');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+                document.getElementById('logo-upload').value = ""; // reset input
+                generateQR();
+            } else {
+                document.getElementById('logo-upload').click();
+            }
+        }
+
+        function handleLogoUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentLogo = e.target.result; // Base64 string
+                    
+                    // Update UI button
+                    const btn = document.getElementById('logo-btn');
+                    btn.innerText = "Rimuovi Logo";
+                    btn.classList.remove('bg-gray-200', 'text-gray-700');
+                    btn.classList.add('bg-red-100', 'text-red-700');
+                    
+                    generateQR();
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // --- Actions ---
+
+        function saveImage() {
+            const canvas = document.querySelector('#qr-preview canvas');
+            if (!canvas) {
+                alert("Nessun QR code generato da salvare.");
+                return;
+            }
+            const link = document.createElement('a');
+            link.download = 'qrcode.png';
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        }
+
+        // FIX: Gestione più robusta degli errori di clipboard
+        function copyImage() {
+            const canvas = document.querySelector('#qr-preview canvas');
+            if (!canvas) return;
+
+            canvas.toBlob(function(blob) {
+                if (!blob) return;
+
+                // Verifica supporto API Clipboard
+                if (navigator.clipboard && navigator.clipboard.write) {
+                    try {
+                        const item = new ClipboardItem({ "image/png": blob });
+                        navigator.clipboard.write([item])
+                            .then(() => {
+                                alert("Immagine copiata negli appunti!");
+                            })
+                            .catch((err) => {
+                                console.warn("Errore Async Clipboard:", err);
+                                // Se fallisce l'async (es. permissions policy), proviamo il fallback
+                                fallbackCopyImage(canvas);
+                            });
+                    } catch (err) {
+                        console.warn("Errore Sync Clipboard:", err);
+                        fallbackCopyImage(canvas);
+                    }
+                } else {
+                    fallbackCopyImage(canvas);
+                }
+            });
+        }
+
+        function fallbackCopyImage(canvas) {
+            // Metodo legacy hacky (crea img, seleziona, execCommand copy)
+            // Nota: Questo metodo copia l'elemento IMG, che non sempre incolla come Bitmap ovunque, ma è il miglior fallback.
+            // Se anche questo fallisce, avvisiamo l'utente.
+            try {
+                const imgUrl = canvas.toDataURL();
+                const div = document.createElement('div');
+                div.contentEditable = true;
+                div.style.position = 'fixed';
+                div.style.left = '-9999px';
+                div.style.top = '0';
+                div.innerHTML = `<img src="${imgUrl}" />`;
+                document.body.appendChild(div);
+                
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(div);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                const successful = document.execCommand('copy');
+                document.body.removeChild(div);
+                
+                if (successful) {
+                    alert("Immagine copiata negli appunti (metodo alternativo)!");
+                } else {
+                    throw new Error("Comando copy fallito");
+                }
+            } catch (e) {
+                console.error("Fallback fallito:", e);
+                alert("Il browser ha bloccato la copia automatica. Per favore, clicca con il tasto destro sull'immagine e seleziona 'Copia immagine'.");
+            }
+        }
+
+        function copySvgWarning() {
+            // EasyQRCodeJS draws to Canvas primarily for logo support. 
+            // Generating a true SVG with an embedded raster logo client-side is complex.
+            alert("La copia in formato SVG non è supportata in questa versione web con logo integrato. Utilizza 'Copia Immagine' per ottenere il risultato visualizzato.");
+        }
+
+        function openDonate() {
+            window.open("https://paypal.me/stefanocaronia", "_blank");
+        }
+
+        function showHelp() {
+            document.getElementById('help-modal').classList.remove('hidden');
+            document.getElementById('help-modal').classList.add('flex');
+        }
+
+    </script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Text;
 using QRCoder;
@@ -17,8 +18,8 @@ public static class QrGenerator
 
         string payload = PreparePayload(text, options.payloadMode, options);
 
-        if (options.logo != null && options.errorCorrection != ErrorCorrectionLevel.High && options.errorCorrection != ErrorCorrectionLevel.Maximum) {
-            options.errorCorrection = ErrorCorrectionLevel.High;
+        if (options.logo != null && options.errorCorrection != ErrorCorrectionLevel.Maximum) {
+            options.errorCorrection = ErrorCorrectionLevel.Maximum;
         }
 
         using var generator = new QRCodeGenerator();
@@ -46,8 +47,8 @@ public static class QrGenerator
 
         string payload = PreparePayload(text, options.payloadMode, options);
 
-        if (options.logo != null && options.errorCorrection != ErrorCorrectionLevel.High && options.errorCorrection != ErrorCorrectionLevel.Maximum) {
-            options.errorCorrection = ErrorCorrectionLevel.High;
+        if (options.logo != null && options.errorCorrection != ErrorCorrectionLevel.Maximum) {
+            options.errorCorrection = ErrorCorrectionLevel.Maximum;
         }
 
         using var generator = new QRCodeGenerator();
@@ -350,9 +351,34 @@ public static class QrGenerator
 
     private static byte[] GeneratePng(QRCodeData data, QrCodeOptions options)
     {
+        return SaveBitmap(RenderBitmap(data, options), ImageFormat.Png);
+    }
+
+    private static byte[] GenerateBmp(QRCodeData data, QrCodeOptions options)
+    {
+        return SaveBitmap(RenderBitmap(data, options), ImageFormat.Bmp);
+    }
+
+    private static byte[] GenerateJpeg(QRCodeData data, QrCodeOptions options)
+    {
+        return SaveBitmap(RenderBitmap(data, options), ImageFormat.Jpeg);
+    }
+
+    private static byte[] GenerateGif(QRCodeData data, QrCodeOptions options)
+    {
+        return SaveBitmap(RenderBitmap(data, options), ImageFormat.Gif);
+    }
+
+    /// <summary>
+    /// Disegna il codice in tutti i formati raster, logo compreso.
+    /// </summary>
+    private static Bitmap RenderBitmap(QRCodeData data, QrCodeOptions options)
+    {
+        Bitmap bitmap;
+
         if (options.shape == PixelShape.Circle) {
-            using var qr = new ArtQRCode(data);
-            using Bitmap bitmap = qr.GetGraphic(
+            using var artQr = new ArtQRCode(data);
+            bitmap = artQr.GetGraphic(
                 pixelsPerModule: options.pixelsPerModule,
                 darkColor: options.darkColor,
                 lightColor: options.lightColor,
@@ -360,68 +386,80 @@ public static class QrGenerator
                 pixelSizeFactor: 0.8f,
                 drawQuietZones: true
             );
-            using var ms = new MemoryStream();
-            bitmap.Save(ms, ImageFormat.Png);
-            return ms.ToArray();
         } else {
             using var qr = new QRCode(data);
-            Bitmap? logoBitmap = options.logo != null ? (Bitmap)options.logo : null;
-
-            using Bitmap bitmap = qr.GetGraphic(
+            bitmap = qr.GetGraphic(
                 pixelsPerModule: options.pixelsPerModule,
                 darkColor: options.darkColor,
                 lightColor: options.lightColor,
-                icon: logoBitmap,
-                iconSizePercent: 15,
-                iconBorderWidth: 0,
                 drawQuietZones: true
             );
-            using var ms = new MemoryStream();
-            bitmap.Save(ms, ImageFormat.Png);
-            return ms.ToArray();
         }
+
+        if (options.logo != null) {
+            DrawLogo(bitmap, options.logo, options.lightColor);
+        }
+
+        return bitmap;
     }
 
-    private static byte[] GenerateBmp(QRCodeData data, QrCodeOptions options)
+    /// <summary>
+    /// Disegna il logo al centro su uno sfondo arrotondato che libera i moduli sottostanti:
+    /// senza di esso il logo risulterebbe semplicemente sovrapposto al disegno del codice.
+    /// </summary>
+    private static void DrawLogo(Bitmap bitmap, Image logo, Color backgroundColor)
     {
-        using var qr = new QRCode(data);
-        using Bitmap bitmap = qr.GetGraphic(
-            pixelsPerModule: options.pixelsPerModule,
-            darkColor: options.darkColor,
-            lightColor: options.lightColor,
-            drawQuietZones: true
-        );
-        using var ms = new MemoryStream();
-        bitmap.Save(ms, ImageFormat.Bmp);
-        return ms.ToArray();
+        // Porzione del lato occupata dal logo e margine attorno, in frazione del logo stesso
+        const float logoWidthRatio = 0.24f;
+        const float paddingRatio = 0.14f;
+
+        float logoWidth = bitmap.Width * logoWidthRatio;
+        float logoHeight = logoWidth * logo.Height / logo.Width;
+
+        float x = (bitmap.Width - logoWidth) / 2f;
+        float y = (bitmap.Height - logoHeight) / 2f;
+
+        float padding = logoWidth * paddingRatio;
+        var background = new RectangleF(
+            x - padding,
+            y - padding,
+            logoWidth + (padding * 2f),
+            logoHeight + (padding * 2f));
+
+        using var graphics = Graphics.FromImage(bitmap);
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+        graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+        using (var brush = new SolidBrush(backgroundColor))
+        using (GraphicsPath path = CreateRoundedRectangle(background, padding * 1.6f)) {
+            graphics.FillPath(brush, path);
+        }
+
+        graphics.DrawImage(logo, new RectangleF(x, y, logoWidth, logoHeight));
     }
 
-    private static byte[] GenerateJpeg(QRCodeData data, QrCodeOptions options)
+    private static GraphicsPath CreateRoundedRectangle(RectangleF rectangle, float radius)
     {
-        using var qr = new QRCode(data);
-        using Bitmap bitmap = qr.GetGraphic(
-            pixelsPerModule: options.pixelsPerModule,
-            darkColor: options.darkColor,
-            lightColor: options.lightColor,
-            drawQuietZones: true
-        );
-        using var ms = new MemoryStream();
-        bitmap.Save(ms, ImageFormat.Jpeg);
-        return ms.ToArray();
+        float diameter = Math.Min(radius * 2f, Math.Min(rectangle.Width, rectangle.Height));
+        var path = new GraphicsPath();
+
+        path.AddArc(rectangle.X, rectangle.Y, diameter, diameter, 180f, 90f);
+        path.AddArc(rectangle.Right - diameter, rectangle.Y, diameter, diameter, 270f, 90f);
+        path.AddArc(rectangle.Right - diameter, rectangle.Bottom - diameter, diameter, diameter, 0f, 90f);
+        path.AddArc(rectangle.X, rectangle.Bottom - diameter, diameter, diameter, 90f, 90f);
+        path.CloseFigure();
+
+        return path;
     }
 
-    private static byte[] GenerateGif(QRCodeData data, QrCodeOptions options)
+    private static byte[] SaveBitmap(Bitmap bitmap, ImageFormat format)
     {
-        using var qr = new QRCode(data);
-        using Bitmap bitmap = qr.GetGraphic(
-            pixelsPerModule: options.pixelsPerModule,
-            darkColor: options.darkColor,
-            lightColor: options.lightColor,
-            drawQuietZones: true
-        );
-        using var ms = new MemoryStream();
-        bitmap.Save(ms, ImageFormat.Gif);
-        return ms.ToArray();
+        using (bitmap) {
+            using var stream = new MemoryStream();
+            bitmap.Save(stream, format);
+            return stream.ToArray();
+        }
     }
 
     private static byte[] GenerateSvgBytes(QRCodeData data, QrCodeOptions options)

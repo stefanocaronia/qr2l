@@ -26,14 +26,14 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f0f0;
+            background-color: #dde1e6;
             height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
         html.dark body {
-            background-color: #111827;
+            background-color: #0d1117;
         }
         
         /* Override cursore per aree cliccabili */
@@ -61,7 +61,7 @@
     <div class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 shadow-lg rounded-sm flex flex-col h-full max-w-md mx-auto w-full">
 
         <!-- Toolbar -->
-        <div class="flex items-center bg-gray-100 dark:bg-gray-900 p-2 border-b border-gray-200 dark:border-gray-700 space-x-2">
+        <div class="flex items-center bg-gray-100 dark:bg-gray-800 p-2 border-b border-gray-200 dark:border-gray-700 space-x-2">
             <button onclick="saveImage()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" title="Salva QR Code">
                 <i class="fas fa-save text-blue-600"></i>
             </button>
@@ -123,7 +123,7 @@
         </div>
 
         <!-- Preview Area -->
-        <div class="flex-grow bg-gray-200 dark:bg-gray-900 flex items-center justify-center p-4 overflow-hidden relative">
+        <div class="flex-grow bg-gray-200 dark:bg-gray-800 flex items-center justify-center p-4 overflow-hidden relative">
             <div id="qr-preview" class="bg-transparent">
                 <!-- QR Canvas will be injected here -->
                 <div class="text-gray-500 dark:text-gray-400 text-sm italic">In attesa di input...</div>
@@ -131,7 +131,7 @@
         </div>
 
         <!-- Footer / Status Bar -->
-        <div class="bg-gray-100 dark:bg-gray-900 p-1 px-2 text-xs border-t border-gray-300 dark:border-gray-700 flex justify-between items-center h-8">
+        <div class="bg-gray-100 dark:bg-gray-800 p-1 px-2 text-xs border-t border-gray-300 dark:border-gray-700 flex justify-between items-center h-8">
             <span id="detected-mode" class="font-semibold text-gray-600 dark:text-gray-300">Text</span>
             <button onclick="window.open('https://github.com/stefanocaronia/qr2l', '_blank')" class="text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white">
                 <i class="fab fa-github text-lg"></i>

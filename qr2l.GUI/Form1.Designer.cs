@@ -39,6 +39,7 @@ sealed partial class Form1
         spacer = new System.Windows.Forms.Panel();
         donateButton = new System.Windows.Forms.Button();
         helpButton = new System.Windows.Forms.Button();
+        languageSelector = new System.Windows.Forms.ComboBox();
         optionsGrid = new System.Windows.Forms.TableLayoutPanel();
         panelFg = new System.Windows.Forms.Panel();
         panelBg = new System.Windows.Forms.Panel();
@@ -96,6 +97,7 @@ sealed partial class Form1
         toolBar.Controls.Add(copyAsImageButton);
         toolBar.Controls.Add(copyAsSvgButton);
         toolBar.Controls.Add(spacer);
+        toolBar.Controls.Add(languageSelector);
         toolBar.Controls.Add(donateButton);
         toolBar.Controls.Add(helpButton);
         toolBar.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -145,7 +147,7 @@ sealed partial class Form1
         // 
         spacer.Location = new System.Drawing.Point(93, 3);
         spacer.Name = "spacer";
-        spacer.Size = new System.Drawing.Size(205, 24);
+        spacer.Size = new System.Drawing.Size(100, 24);
         spacer.TabIndex = 6;
         spacer.UseWaitCursor = true;
         // 
@@ -172,6 +174,18 @@ sealed partial class Form1
         helpButton.UseVisualStyleBackColor = true;
         helpButton.UseWaitCursor = true;
         helpButton.Click += helpButton_Click;
+        // 
+        // languageSelector
+        // 
+        languageSelector.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+        languageSelector.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+        languageSelector.FormattingEnabled = true;
+        languageSelector.Location = new System.Drawing.Point(219, 3);
+        languageSelector.Name = "languageSelector";
+        languageSelector.Size = new System.Drawing.Size(79, 23);
+        languageSelector.TabIndex = 7;
+        languageSelector.UseWaitCursor = true;
+        languageSelector.SelectedIndexChanged += languageSelector_SelectedIndexChanged;
         // 
         // optionsGrid
         // 
@@ -401,6 +415,8 @@ sealed partial class Form1
     private System.Windows.Forms.ToolTip tooltip;
 
     private System.Windows.Forms.Button helpButton;
+
+    private System.Windows.Forms.ComboBox languageSelector;
 
     private System.Windows.Forms.Button copyAsImageButton;
     private System.Windows.Forms.Button copyAsSvgButton;

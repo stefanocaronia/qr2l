@@ -1,0 +1,610 @@
+using System.Globalization;
+
+namespace qr2l.GUI;
+
+/// <summary>
+/// Localizzazione della GUI: dizionario incorporato, rilevamento automatico dalla lingua di Windows
+/// e persistenza della scelta manuale dell'utente.
+/// </summary>
+public static class Localization
+{
+    #region Constants and Fields
+
+    private const string DefaultLanguage = "en";
+    private const string SettingsFolderName = "qr2l";
+    private const string SettingsFileName = "language.txt";
+
+    private static readonly Dictionary<string, string> languageNames = new() {
+        ["en"] = "English",
+        ["it"] = "Italiano",
+        ["es"] = "Español",
+        ["fr"] = "Français",
+        ["de"] = "Deutsch",
+        ["pt"] = "Português",
+        ["ru"] = "Русский",
+        ["zh"] = "中文",
+        ["ja"] = "日本語",
+        ["ko"] = "한국어"
+    };
+
+
+    private static readonly Dictionary<string, Dictionary<string, string>> strings = new() {
+        ["en"] = new Dictionary<string, string> {
+            ["tip_save"] = "Save the QR Code",
+            ["tip_copy_image"] = "Copy image to clipboard",
+            ["tip_copy_svg"] = "Copy SVG string to clipboard",
+            ["tip_donate"] = "Buy me a coffee",
+            ["tip_help"] = "Help",
+            ["tip_language"] = "Language",
+            ["tip_repo"] = "Open the project repository",
+            ["tip_fg"] = "Sets the pixel color",
+            ["tip_bg"] = "Sets the background color",
+            ["tip_text"] = "Insert here the text for the QR Code",
+            ["tip_picture"] = "Right click the image for options",
+            ["placeholder"] = "Insert here the text for the QR Code",
+            ["logo_set"] = "Set the logo",
+            ["logo_remove"] = "Remove the logo",
+            ["menu_save_as"] = "Save As",
+            ["menu_copy_image"] = "Copy As Image",
+            ["menu_copy_svg"] = "Copy As SVG",
+            ["dlg_save_as"] = "Save As",
+            ["dlg_image_files"] = "Image files",
+            ["msg_copied_image"] = "QR Code copied to clipboard as an image!",
+            ["msg_copied_image_title"] = "Copy Image to Clipboard",
+            ["msg_copied_svg"] = "SVG QR Code copied to clipboard as text!",
+            ["msg_copied_svg_title"] = "Copy SVG to Clipboard",
+            ["err_title"] = "Error",
+            ["err_copy_image"] = "Error copying image to clipboard:",
+            ["err_copy_svg"] = "Error copying SVG to clipboard:",
+            ["err_no_text"] = "Please enter text to generate QR code.",
+            ["err_export"] = "Error exporting",
+            ["err_open_url"] = "Cannot open the url.",
+            ["help_title"] = "Help",
+            ["help_p1"] = "Enter the text you want to encode in the QR code in the text box.",
+            ["help_p2"] = "Choose foreground and background colors by clicking on the color panels.",
+            ["help_p3"] = "Optionally, add a logo by clicking on the logo box. Click again to clear the logo.",
+            ["help_p4"] = "The QR code preview will update automatically.",
+            ["help_p5"] = "Use the buttons to save the QR code or copy it to the clipboard as an image or SVG.",
+            ["help_formats"] = "Supported Formats (auto-detected):",
+            ["fmt_url"] = "URLs",
+            ["fmt_mail"] = "Email",
+            ["fmt_phone"] = "Phone",
+            ["fmt_sms"] = "SMS",
+            ["fmt_whatsapp"] = "WhatsApp",
+            ["fmt_wifi"] = "WiFi",
+            ["fmt_geo"] = "Geolocation",
+            ["fmt_contact"] = "Contact",
+            ["fmt_event"] = "Event",
+            ["help_note"] = "Note: WiFi networks require the WIFI: prefix. You can use the simplified format (WIFI:SSID;password) or the complete format for advanced options."
+        },
+        ["it"] = new Dictionary<string, string> {
+            ["tip_save"] = "Salva il QR Code",
+            ["tip_copy_image"] = "Copia l'immagine negli appunti",
+            ["tip_copy_svg"] = "Copia il codice SVG negli appunti",
+            ["tip_donate"] = "Offrimi un caffè",
+            ["tip_help"] = "Aiuto",
+            ["tip_language"] = "Lingua",
+            ["tip_repo"] = "Apri il repository del progetto",
+            ["tip_fg"] = "Imposta il colore dei pixel",
+            ["tip_bg"] = "Imposta il colore di sfondo",
+            ["tip_text"] = "Inserisci qui il testo per il QR Code",
+            ["tip_picture"] = "Clicca con il tasto destro sull'immagine per le opzioni",
+            ["placeholder"] = "Inserisci qui il testo per il QR Code",
+            ["logo_set"] = "Inserisci il logo",
+            ["logo_remove"] = "Rimuovi il logo",
+            ["menu_save_as"] = "Salva con nome",
+            ["menu_copy_image"] = "Copia come immagine",
+            ["menu_copy_svg"] = "Copia come SVG",
+            ["dlg_save_as"] = "Salva con nome",
+            ["dlg_image_files"] = "File immagine",
+            ["msg_copied_image"] = "QR Code copiato negli appunti come immagine!",
+            ["msg_copied_image_title"] = "Copia immagine negli appunti",
+            ["msg_copied_svg"] = "QR Code SVG copiato negli appunti come testo!",
+            ["msg_copied_svg_title"] = "Copia SVG negli appunti",
+            ["err_title"] = "Errore",
+            ["err_copy_image"] = "Errore nella copia dell'immagine negli appunti:",
+            ["err_copy_svg"] = "Errore nella copia dell'SVG negli appunti:",
+            ["err_no_text"] = "Inserisci del testo per generare il QR Code.",
+            ["err_export"] = "Errore durante l'esportazione",
+            ["err_open_url"] = "Impossibile aprire l'indirizzo.",
+            ["help_title"] = "Aiuto",
+            ["help_p1"] = "Inserisci nella casella di testo il contenuto da codificare nel QR Code.",
+            ["help_p2"] = "Scegli i colori dei pixel e dello sfondo cliccando sui riquadri colorati.",
+            ["help_p3"] = "Se vuoi, aggiungi un logo cliccando sul riquadro del logo. Clicca di nuovo per rimuoverlo.",
+            ["help_p4"] = "L'anteprima del QR Code si aggiorna automaticamente.",
+            ["help_p5"] = "Usa i pulsanti per salvare il QR Code o copiarlo negli appunti come immagine o SVG.",
+            ["help_formats"] = "Formati supportati (rilevamento automatico):",
+            ["fmt_url"] = "URL",
+            ["fmt_mail"] = "Email",
+            ["fmt_phone"] = "Telefono",
+            ["fmt_sms"] = "SMS",
+            ["fmt_whatsapp"] = "WhatsApp",
+            ["fmt_wifi"] = "WiFi",
+            ["fmt_geo"] = "Geolocalizzazione",
+            ["fmt_contact"] = "Contatto",
+            ["fmt_event"] = "Evento",
+            ["help_note"] = "Nota: le reti WiFi richiedono il prefisso WIFI:. Puoi usare il formato semplificato (WIFI:SSID;password) oppure quello completo per le opzioni avanzate."
+        },
+        ["es"] = new Dictionary<string, string> {
+            ["tip_save"] = "Guardar el código QR",
+            ["tip_copy_image"] = "Copiar la imagen al portapapeles",
+            ["tip_copy_svg"] = "Copiar el código SVG al portapapeles",
+            ["tip_donate"] = "Invítame a un café",
+            ["tip_help"] = "Ayuda",
+            ["tip_language"] = "Idioma",
+            ["tip_repo"] = "Abrir el repositorio del proyecto",
+            ["tip_fg"] = "Define el color de los píxeles",
+            ["tip_bg"] = "Define el color de fondo",
+            ["tip_text"] = "Introduce aquí el texto para el código QR",
+            ["tip_picture"] = "Haz clic derecho en la imagen para ver las opciones",
+            ["placeholder"] = "Introduce aquí el texto para el código QR",
+            ["logo_set"] = "Añadir el logo",
+            ["logo_remove"] = "Quitar el logo",
+            ["menu_save_as"] = "Guardar como",
+            ["menu_copy_image"] = "Copiar como imagen",
+            ["menu_copy_svg"] = "Copiar como SVG",
+            ["dlg_save_as"] = "Guardar como",
+            ["dlg_image_files"] = "Archivos de imagen",
+            ["msg_copied_image"] = "Código QR copiado al portapapeles como imagen.",
+            ["msg_copied_image_title"] = "Copiar imagen al portapapeles",
+            ["msg_copied_svg"] = "Código QR en SVG copiado al portapapeles como texto.",
+            ["msg_copied_svg_title"] = "Copiar SVG al portapapeles",
+            ["err_title"] = "Error",
+            ["err_copy_image"] = "Error al copiar la imagen al portapapeles:",
+            ["err_copy_svg"] = "Error al copiar el SVG al portapapeles:",
+            ["err_no_text"] = "Introduce un texto para generar el código QR.",
+            ["err_export"] = "Error al exportar",
+            ["err_open_url"] = "No se puede abrir la dirección.",
+            ["help_title"] = "Ayuda",
+            ["help_p1"] = "Introduce en el cuadro de texto el contenido que quieres codificar en el código QR.",
+            ["help_p2"] = "Elige los colores de los píxeles y del fondo haciendo clic en los paneles de color.",
+            ["help_p3"] = "Si quieres, añade un logo haciendo clic en el cuadro del logo. Haz clic de nuevo para quitarlo.",
+            ["help_p4"] = "La vista previa del código QR se actualiza automáticamente.",
+            ["help_p5"] = "Usa los botones para guardar el código QR o copiarlo al portapapeles como imagen o SVG.",
+            ["help_formats"] = "Formatos admitidos (detección automática):",
+            ["fmt_url"] = "URL",
+            ["fmt_mail"] = "Correo",
+            ["fmt_phone"] = "Teléfono",
+            ["fmt_sms"] = "SMS",
+            ["fmt_whatsapp"] = "WhatsApp",
+            ["fmt_wifi"] = "WiFi",
+            ["fmt_geo"] = "Geolocalización",
+            ["fmt_contact"] = "Contacto",
+            ["fmt_event"] = "Evento",
+            ["help_note"] = "Nota: las redes WiFi requieren el prefijo WIFI:. Puedes usar el formato simplificado (WIFI:SSID;contraseña) o el formato completo para opciones avanzadas."
+        },
+        ["fr"] = new Dictionary<string, string> {
+            ["tip_save"] = "Enregistrer le QR Code",
+            ["tip_copy_image"] = "Copier l'image dans le presse-papiers",
+            ["tip_copy_svg"] = "Copier le code SVG dans le presse-papiers",
+            ["tip_donate"] = "Offrez-moi un café",
+            ["tip_help"] = "Aide",
+            ["tip_language"] = "Langue",
+            ["tip_repo"] = "Ouvrir le dépôt du projet",
+            ["tip_fg"] = "Définit la couleur des pixels",
+            ["tip_bg"] = "Définit la couleur d'arrière-plan",
+            ["tip_text"] = "Saisissez ici le texte du QR Code",
+            ["tip_picture"] = "Clic droit sur l'image pour les options",
+            ["placeholder"] = "Saisissez ici le texte du QR Code",
+            ["logo_set"] = "Ajouter un logo",
+            ["logo_remove"] = "Retirer le logo",
+            ["menu_save_as"] = "Enregistrer sous",
+            ["menu_copy_image"] = "Copier comme image",
+            ["menu_copy_svg"] = "Copier comme SVG",
+            ["dlg_save_as"] = "Enregistrer sous",
+            ["dlg_image_files"] = "Fichiers image",
+            ["msg_copied_image"] = "QR Code copié dans le presse-papiers en tant qu'image.",
+            ["msg_copied_image_title"] = "Copier l'image dans le presse-papiers",
+            ["msg_copied_svg"] = "QR Code SVG copié dans le presse-papiers en tant que texte.",
+            ["msg_copied_svg_title"] = "Copier le SVG dans le presse-papiers",
+            ["err_title"] = "Erreur",
+            ["err_copy_image"] = "Erreur lors de la copie de l'image dans le presse-papiers :",
+            ["err_copy_svg"] = "Erreur lors de la copie du SVG dans le presse-papiers :",
+            ["err_no_text"] = "Saisissez un texte pour générer le QR Code.",
+            ["err_export"] = "Erreur lors de l'exportation",
+            ["err_open_url"] = "Impossible d'ouvrir l'adresse.",
+            ["help_title"] = "Aide",
+            ["help_p1"] = "Saisissez dans le champ de texte le contenu à encoder dans le QR Code.",
+            ["help_p2"] = "Choisissez les couleurs des pixels et de l'arrière-plan en cliquant sur les carrés de couleur.",
+            ["help_p3"] = "Si vous le souhaitez, ajoutez un logo en cliquant sur le carré du logo. Cliquez à nouveau pour le retirer.",
+            ["help_p4"] = "L'aperçu du QR Code se met à jour automatiquement.",
+            ["help_p5"] = "Utilisez les boutons pour enregistrer le QR Code ou le copier dans le presse-papiers comme image ou SVG.",
+            ["help_formats"] = "Formats pris en charge (détection automatique) :",
+            ["fmt_url"] = "URL",
+            ["fmt_mail"] = "E-mail",
+            ["fmt_phone"] = "Téléphone",
+            ["fmt_sms"] = "SMS",
+            ["fmt_whatsapp"] = "WhatsApp",
+            ["fmt_wifi"] = "WiFi",
+            ["fmt_geo"] = "Géolocalisation",
+            ["fmt_contact"] = "Contact",
+            ["fmt_event"] = "Événement",
+            ["help_note"] = "Remarque : les réseaux WiFi nécessitent le préfixe WIFI:. Vous pouvez utiliser le format simplifié (WIFI:SSID;motdepasse) ou le format complet pour les options avancées."
+        },
+        ["de"] = new Dictionary<string, string> {
+            ["tip_save"] = "QR-Code speichern",
+            ["tip_copy_image"] = "Bild in die Zwischenablage kopieren",
+            ["tip_copy_svg"] = "SVG-Code in die Zwischenablage kopieren",
+            ["tip_donate"] = "Spendiere mir einen Kaffee",
+            ["tip_help"] = "Hilfe",
+            ["tip_language"] = "Sprache",
+            ["tip_repo"] = "Projekt-Repository öffnen",
+            ["tip_fg"] = "Legt die Pixelfarbe fest",
+            ["tip_bg"] = "Legt die Hintergrundfarbe fest",
+            ["tip_text"] = "Hier den Text für den QR-Code eingeben",
+            ["tip_picture"] = "Rechtsklick auf das Bild für Optionen",
+            ["placeholder"] = "Hier den Text für den QR-Code eingeben",
+            ["logo_set"] = "Logo hinzufügen",
+            ["logo_remove"] = "Logo entfernen",
+            ["menu_save_as"] = "Speichern unter",
+            ["menu_copy_image"] = "Als Bild kopieren",
+            ["menu_copy_svg"] = "Als SVG kopieren",
+            ["dlg_save_as"] = "Speichern unter",
+            ["dlg_image_files"] = "Bilddateien",
+            ["msg_copied_image"] = "QR-Code als Bild in die Zwischenablage kopiert.",
+            ["msg_copied_image_title"] = "Bild in die Zwischenablage kopieren",
+            ["msg_copied_svg"] = "SVG-QR-Code als Text in die Zwischenablage kopiert.",
+            ["msg_copied_svg_title"] = "SVG in die Zwischenablage kopieren",
+            ["err_title"] = "Fehler",
+            ["err_copy_image"] = "Fehler beim Kopieren des Bildes in die Zwischenablage:",
+            ["err_copy_svg"] = "Fehler beim Kopieren des SVG in die Zwischenablage:",
+            ["err_no_text"] = "Gib einen Text ein, um den QR-Code zu erzeugen.",
+            ["err_export"] = "Fehler beim Exportieren",
+            ["err_open_url"] = "Die Adresse kann nicht geöffnet werden.",
+            ["help_title"] = "Hilfe",
+            ["help_p1"] = "Gib in das Textfeld den Inhalt ein, der im QR-Code kodiert werden soll.",
+            ["help_p2"] = "Wähle die Pixel- und Hintergrundfarben durch Klick auf die Farbfelder.",
+            ["help_p3"] = "Optional kannst du ein Logo hinzufügen, indem du auf das Logofeld klickst. Ein erneuter Klick entfernt es.",
+            ["help_p4"] = "Die Vorschau des QR-Codes wird automatisch aktualisiert.",
+            ["help_p5"] = "Verwende die Schaltflächen, um den QR-Code zu speichern oder als Bild bzw. SVG in die Zwischenablage zu kopieren.",
+            ["help_formats"] = "Unterstützte Formate (automatische Erkennung):",
+            ["fmt_url"] = "URL",
+            ["fmt_mail"] = "E-Mail",
+            ["fmt_phone"] = "Telefon",
+            ["fmt_sms"] = "SMS",
+            ["fmt_whatsapp"] = "WhatsApp",
+            ["fmt_wifi"] = "WLAN",
+            ["fmt_geo"] = "Geolokalisierung",
+            ["fmt_contact"] = "Kontakt",
+            ["fmt_event"] = "Termin",
+            ["help_note"] = "Hinweis: WLAN-Netzwerke benötigen das Präfix WIFI:. Du kannst das vereinfachte Format (WIFI:SSID;Passwort) oder das vollständige Format für erweiterte Optionen verwenden."
+        },
+        ["pt"] = new Dictionary<string, string> {
+            ["tip_save"] = "Guardar o código QR",
+            ["tip_copy_image"] = "Copiar a imagem para a área de transferência",
+            ["tip_copy_svg"] = "Copiar o código SVG para a área de transferência",
+            ["tip_donate"] = "Paga-me um café",
+            ["tip_help"] = "Ajuda",
+            ["tip_language"] = "Idioma",
+            ["tip_repo"] = "Abrir o repositório do projeto",
+            ["tip_fg"] = "Define a cor dos pixels",
+            ["tip_bg"] = "Define a cor de fundo",
+            ["tip_text"] = "Introduza aqui o texto para o código QR",
+            ["tip_picture"] = "Clique com o botão direito na imagem para ver as opções",
+            ["placeholder"] = "Introduza aqui o texto para o código QR",
+            ["logo_set"] = "Adicionar o logótipo",
+            ["logo_remove"] = "Remover o logótipo",
+            ["menu_save_as"] = "Guardar como",
+            ["menu_copy_image"] = "Copiar como imagem",
+            ["menu_copy_svg"] = "Copiar como SVG",
+            ["dlg_save_as"] = "Guardar como",
+            ["dlg_image_files"] = "Ficheiros de imagem",
+            ["msg_copied_image"] = "Código QR copiado para a área de transferência como imagem.",
+            ["msg_copied_image_title"] = "Copiar imagem para a área de transferência",
+            ["msg_copied_svg"] = "Código QR em SVG copiado para a área de transferência como texto.",
+            ["msg_copied_svg_title"] = "Copiar SVG para a área de transferência",
+            ["err_title"] = "Erro",
+            ["err_copy_image"] = "Erro ao copiar a imagem para a área de transferência:",
+            ["err_copy_svg"] = "Erro ao copiar o SVG para a área de transferência:",
+            ["err_no_text"] = "Introduza um texto para gerar o código QR.",
+            ["err_export"] = "Erro ao exportar",
+            ["err_open_url"] = "Não é possível abrir o endereço.",
+            ["help_title"] = "Ajuda",
+            ["help_p1"] = "Introduza na caixa de texto o conteúdo que pretende codificar no código QR.",
+            ["help_p2"] = "Escolha as cores dos pixels e do fundo clicando nos painéis de cor.",
+            ["help_p3"] = "Se quiser, adicione um logótipo clicando na caixa do logótipo. Clique novamente para o remover.",
+            ["help_p4"] = "A pré-visualização do código QR é atualizada automaticamente.",
+            ["help_p5"] = "Utilize os botões para guardar o código QR ou copiá-lo para a área de transferência como imagem ou SVG.",
+            ["help_formats"] = "Formatos suportados (deteção automática):",
+            ["fmt_url"] = "URL",
+            ["fmt_mail"] = "Email",
+            ["fmt_phone"] = "Telefone",
+            ["fmt_sms"] = "SMS",
+            ["fmt_whatsapp"] = "WhatsApp",
+            ["fmt_wifi"] = "WiFi",
+            ["fmt_geo"] = "Geolocalização",
+            ["fmt_contact"] = "Contacto",
+            ["fmt_event"] = "Evento",
+            ["help_note"] = "Nota: as redes WiFi requerem o prefixo WIFI:. Pode usar o formato simplificado (WIFI:SSID;palavra-passe) ou o formato completo para opções avançadas."
+        },
+        ["ru"] = new Dictionary<string, string> {
+            ["tip_save"] = "Сохранить QR-код",
+            ["tip_copy_image"] = "Копировать изображение в буфер обмена",
+            ["tip_copy_svg"] = "Копировать код SVG в буфер обмена",
+            ["tip_donate"] = "Купить мне кофе",
+            ["tip_help"] = "Справка",
+            ["tip_language"] = "Язык",
+            ["tip_repo"] = "Открыть репозиторий проекта",
+            ["tip_fg"] = "Задаёт цвет пикселей",
+            ["tip_bg"] = "Задаёт цвет фона",
+            ["tip_text"] = "Введите здесь текст для QR-кода",
+            ["tip_picture"] = "Щёлкните правой кнопкой по изображению для параметров",
+            ["placeholder"] = "Введите здесь текст для QR-кода",
+            ["logo_set"] = "Добавить логотип",
+            ["logo_remove"] = "Убрать логотип",
+            ["menu_save_as"] = "Сохранить как",
+            ["menu_copy_image"] = "Копировать как изображение",
+            ["menu_copy_svg"] = "Копировать как SVG",
+            ["dlg_save_as"] = "Сохранить как",
+            ["dlg_image_files"] = "Файлы изображений",
+            ["msg_copied_image"] = "QR-код скопирован в буфер обмена как изображение.",
+            ["msg_copied_image_title"] = "Копирование изображения в буфер обмена",
+            ["msg_copied_svg"] = "SVG QR-код скопирован в буфер обмена как текст.",
+            ["msg_copied_svg_title"] = "Копирование SVG в буфер обмена",
+            ["err_title"] = "Ошибка",
+            ["err_copy_image"] = "Ошибка при копировании изображения в буфер обмена:",
+            ["err_copy_svg"] = "Ошибка при копировании SVG в буфер обмена:",
+            ["err_no_text"] = "Введите текст для создания QR-кода.",
+            ["err_export"] = "Ошибка при экспорте",
+            ["err_open_url"] = "Не удалось открыть адрес.",
+            ["help_title"] = "Справка",
+            ["help_p1"] = "Введите в текстовое поле содержимое, которое нужно закодировать в QR-код.",
+            ["help_p2"] = "Выберите цвета пикселей и фона, щёлкнув по цветным панелям.",
+            ["help_p3"] = "При желании добавьте логотип, щёлкнув по полю логотипа. Повторный щелчок удалит его.",
+            ["help_p4"] = "Предварительный просмотр QR-кода обновляется автоматически.",
+            ["help_p5"] = "Используйте кнопки, чтобы сохранить QR-код или скопировать его в буфер обмена как изображение или SVG.",
+            ["help_formats"] = "Поддерживаемые форматы (автоопределение):",
+            ["fmt_url"] = "URL",
+            ["fmt_mail"] = "Эл. почта",
+            ["fmt_phone"] = "Телефон",
+            ["fmt_sms"] = "SMS",
+            ["fmt_whatsapp"] = "WhatsApp",
+            ["fmt_wifi"] = "WiFi",
+            ["fmt_geo"] = "Геолокация",
+            ["fmt_contact"] = "Контакт",
+            ["fmt_event"] = "Событие",
+            ["help_note"] = "Примечание: сети WiFi требуют префикс WIFI:. Можно использовать упрощённый формат (WIFI:SSID;пароль) или полный формат для дополнительных параметров."
+        },
+        ["zh"] = new Dictionary<string, string> {
+            ["tip_save"] = "保存二维码",
+            ["tip_copy_image"] = "复制图片到剪贴板",
+            ["tip_copy_svg"] = "复制 SVG 代码到剪贴板",
+            ["tip_donate"] = "请我喝杯咖啡",
+            ["tip_help"] = "帮助",
+            ["tip_language"] = "语言",
+            ["tip_repo"] = "打开项目仓库",
+            ["tip_fg"] = "设置像素颜色",
+            ["tip_bg"] = "设置背景颜色",
+            ["tip_text"] = "在此输入二维码内容",
+            ["tip_picture"] = "右键点击图片查看选项",
+            ["placeholder"] = "在此输入二维码内容",
+            ["logo_set"] = "添加标志",
+            ["logo_remove"] = "移除标志",
+            ["menu_save_as"] = "另存为",
+            ["menu_copy_image"] = "复制为图片",
+            ["menu_copy_svg"] = "复制为 SVG",
+            ["dlg_save_as"] = "另存为",
+            ["dlg_image_files"] = "图片文件",
+            ["msg_copied_image"] = "二维码已作为图片复制到剪贴板。",
+            ["msg_copied_image_title"] = "复制图片到剪贴板",
+            ["msg_copied_svg"] = "SVG 二维码已作为文本复制到剪贴板。",
+            ["msg_copied_svg_title"] = "复制 SVG 到剪贴板",
+            ["err_title"] = "错误",
+            ["err_copy_image"] = "复制图片到剪贴板时出错：",
+            ["err_copy_svg"] = "复制 SVG 到剪贴板时出错：",
+            ["err_no_text"] = "请输入文本以生成二维码。",
+            ["err_export"] = "导出时出错",
+            ["err_open_url"] = "无法打开该网址。",
+            ["help_title"] = "帮助",
+            ["help_p1"] = "在文本框中输入要编码到二维码中的内容。",
+            ["help_p2"] = "点击颜色面板选择像素颜色和背景颜色。",
+            ["help_p3"] = "如需要，可点击标志框添加标志。再次点击即可移除。",
+            ["help_p4"] = "二维码预览会自动更新。",
+            ["help_p5"] = "使用按钮保存二维码，或将其作为图片或 SVG 复制到剪贴板。",
+            ["help_formats"] = "支持的格式（自动识别）：",
+            ["fmt_url"] = "网址",
+            ["fmt_mail"] = "电子邮件",
+            ["fmt_phone"] = "电话",
+            ["fmt_sms"] = "短信",
+            ["fmt_whatsapp"] = "WhatsApp",
+            ["fmt_wifi"] = "WiFi",
+            ["fmt_geo"] = "地理位置",
+            ["fmt_contact"] = "联系人",
+            ["fmt_event"] = "日程",
+            ["help_note"] = "注意：WiFi 网络需要 WIFI: 前缀。可以使用简化格式（WIFI:SSID;密码），也可以使用完整格式以获得高级选项。"
+        },
+        ["ja"] = new Dictionary<string, string> {
+            ["tip_save"] = "QRコードを保存",
+            ["tip_copy_image"] = "画像をクリップボードにコピー",
+            ["tip_copy_svg"] = "SVGコードをクリップボードにコピー",
+            ["tip_donate"] = "コーヒーをおごる",
+            ["tip_help"] = "ヘルプ",
+            ["tip_language"] = "言語",
+            ["tip_repo"] = "プロジェクトのリポジトリを開く",
+            ["tip_fg"] = "ピクセルの色を設定します",
+            ["tip_bg"] = "背景の色を設定します",
+            ["tip_text"] = "QRコードにするテキストをここに入力",
+            ["tip_picture"] = "画像を右クリックするとオプションが表示されます",
+            ["placeholder"] = "QRコードにするテキストをここに入力",
+            ["logo_set"] = "ロゴを追加",
+            ["logo_remove"] = "ロゴを削除",
+            ["menu_save_as"] = "名前を付けて保存",
+            ["menu_copy_image"] = "画像としてコピー",
+            ["menu_copy_svg"] = "SVGとしてコピー",
+            ["dlg_save_as"] = "名前を付けて保存",
+            ["dlg_image_files"] = "画像ファイル",
+            ["msg_copied_image"] = "QRコードを画像としてクリップボードにコピーしました。",
+            ["msg_copied_image_title"] = "画像をクリップボードにコピー",
+            ["msg_copied_svg"] = "SVGのQRコードをテキストとしてクリップボードにコピーしました。",
+            ["msg_copied_svg_title"] = "SVGをクリップボードにコピー",
+            ["err_title"] = "エラー",
+            ["err_copy_image"] = "画像をクリップボードにコピーする際のエラー:",
+            ["err_copy_svg"] = "SVGをクリップボードにコピーする際のエラー:",
+            ["err_no_text"] = "QRコードを生成するテキストを入力してください。",
+            ["err_export"] = "エクスポート中のエラー",
+            ["err_open_url"] = "URLを開けません。",
+            ["help_title"] = "ヘルプ",
+            ["help_p1"] = "QRコードに埋め込む内容をテキストボックスに入力します。",
+            ["help_p2"] = "カラーパネルをクリックして、ピクセルと背景の色を選びます。",
+            ["help_p3"] = "必要に応じて、ロゴ欄をクリックしてロゴを追加できます。もう一度クリックすると削除されます。",
+            ["help_p4"] = "QRコードのプレビューは自動的に更新されます。",
+            ["help_p5"] = "ボタンを使ってQRコードを保存したり、画像またはSVGとしてクリップボードにコピーできます。",
+            ["help_formats"] = "対応フォーマット（自動判別）:",
+            ["fmt_url"] = "URL",
+            ["fmt_mail"] = "メール",
+            ["fmt_phone"] = "電話",
+            ["fmt_sms"] = "SMS",
+            ["fmt_whatsapp"] = "WhatsApp",
+            ["fmt_wifi"] = "WiFi",
+            ["fmt_geo"] = "位置情報",
+            ["fmt_contact"] = "連絡先",
+            ["fmt_event"] = "予定",
+            ["help_note"] = "注意: WiFiネットワークには WIFI: プレフィックスが必要です。簡易形式（WIFI:SSID;パスワード）または詳細オプション用の完全な形式を使用できます。"
+        },
+        ["ko"] = new Dictionary<string, string> {
+            ["tip_save"] = "QR 코드 저장",
+            ["tip_copy_image"] = "이미지를 클립보드에 복사",
+            ["tip_copy_svg"] = "SVG 코드를 클립보드에 복사",
+            ["tip_donate"] = "커피 사주기",
+            ["tip_help"] = "도움말",
+            ["tip_language"] = "언어",
+            ["tip_repo"] = "프로젝트 저장소 열기",
+            ["tip_fg"] = "픽셀 색상을 설정합니다",
+            ["tip_bg"] = "배경 색상을 설정합니다",
+            ["tip_text"] = "QR 코드에 넣을 텍스트를 여기에 입력",
+            ["tip_picture"] = "이미지를 오른쪽 클릭하면 옵션이 표시됩니다",
+            ["placeholder"] = "QR 코드에 넣을 텍스트를 여기에 입력",
+            ["logo_set"] = "로고 추가",
+            ["logo_remove"] = "로고 제거",
+            ["menu_save_as"] = "다른 이름으로 저장",
+            ["menu_copy_image"] = "이미지로 복사",
+            ["menu_copy_svg"] = "SVG로 복사",
+            ["dlg_save_as"] = "다른 이름으로 저장",
+            ["dlg_image_files"] = "이미지 파일",
+            ["msg_copied_image"] = "QR 코드를 이미지로 클립보드에 복사했습니다.",
+            ["msg_copied_image_title"] = "이미지를 클립보드에 복사",
+            ["msg_copied_svg"] = "SVG QR 코드를 텍스트로 클립보드에 복사했습니다.",
+            ["msg_copied_svg_title"] = "SVG를 클립보드에 복사",
+            ["err_title"] = "오류",
+            ["err_copy_image"] = "이미지를 클립보드에 복사하는 중 오류:",
+            ["err_copy_svg"] = "SVG를 클립보드에 복사하는 중 오류:",
+            ["err_no_text"] = "QR 코드를 생성할 텍스트를 입력하세요.",
+            ["err_export"] = "내보내는 중 오류",
+            ["err_open_url"] = "주소를 열 수 없습니다.",
+            ["help_title"] = "도움말",
+            ["help_p1"] = "QR 코드에 인코딩할 내용을 텍스트 상자에 입력하세요.",
+            ["help_p2"] = "색상 패널을 클릭하여 픽셀 색과 배경 색을 선택하세요.",
+            ["help_p3"] = "원하는 경우 로고 상자를 클릭해 로고를 추가할 수 있습니다. 다시 클릭하면 제거됩니다.",
+            ["help_p4"] = "QR 코드 미리보기는 자동으로 갱신됩니다.",
+            ["help_p5"] = "버튼을 사용해 QR 코드를 저장하거나 이미지 또는 SVG로 클립보드에 복사하세요.",
+            ["help_formats"] = "지원 형식 (자동 인식):",
+            ["fmt_url"] = "URL",
+            ["fmt_mail"] = "이메일",
+            ["fmt_phone"] = "전화",
+            ["fmt_sms"] = "SMS",
+            ["fmt_whatsapp"] = "WhatsApp",
+            ["fmt_wifi"] = "WiFi",
+            ["fmt_geo"] = "위치",
+            ["fmt_contact"] = "연락처",
+            ["fmt_event"] = "일정",
+            ["help_note"] = "참고: WiFi 네트워크에는 WIFI: 접두사가 필요합니다. 간단한 형식(WIFI:SSID;비밀번호) 또는 고급 옵션용 전체 형식을 사용할 수 있습니다."
+        }
+    };
+
+    private static string currentLanguage = DefaultLanguage;
+
+    #endregion
+
+    #region Properties
+
+    public static string CurrentLanguage => currentLanguage;
+
+    public static IReadOnlyDictionary<string, string> LanguageNames => languageNames;
+
+    private static string SettingsPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        SettingsFolderName,
+        SettingsFileName);
+
+    #endregion
+
+    #region Public Methods
+
+    /// <summary>
+    /// Imposta la lingua iniziale: quella salvata dall'utente, altrimenti quella di Windows.
+    /// </summary>
+    public static void Initialize()
+    {
+        string? saved = LoadSavedLanguage();
+
+        currentLanguage = saved ?? DetectSystemLanguage();
+    }
+
+    public static void SetLanguage(string language)
+    {
+        currentLanguage = strings.ContainsKey(language) ? language : DefaultLanguage;
+        SaveLanguage(currentLanguage);
+    }
+
+    /// <summary>
+    /// Restituisce la stringa localizzata, con fallback all'inglese e infine alla chiave stessa.
+    /// </summary>
+    public static string T(string key)
+    {
+        if (strings.TryGetValue(currentLanguage, out Dictionary<string, string>? table) &&
+            table.TryGetValue(key, out string? value)) {
+            return value;
+        }
+
+        if (strings[DefaultLanguage].TryGetValue(key, out string? fallback)) {
+            return fallback;
+        }
+
+        return key;
+    }
+
+    #endregion
+
+    #region Private Methods
+
+    private static string DetectSystemLanguage()
+    {
+        try {
+            string code = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
+            return strings.ContainsKey(code) ? code : DefaultLanguage;
+        } catch {
+            return DefaultLanguage;
+        }
+    }
+
+    private static string? LoadSavedLanguage()
+    {
+        try {
+            if (!File.Exists(SettingsPath)) {
+                return null;
+            }
+
+            string code = File.ReadAllText(SettingsPath).Trim().ToLowerInvariant();
+            return strings.ContainsKey(code) ? code : null;
+        } catch {
+            return null;
+        }
+    }
+
+    private static void SaveLanguage(string language)
+    {
+        try {
+            string? folder = Path.GetDirectoryName(SettingsPath);
+
+            if (folder != null && !Directory.Exists(folder)) {
+                Directory.CreateDirectory(folder);
+            }
+
+            File.WriteAllText(SettingsPath, language);
+        } catch {
+            // La persistenza è un optional: se fallisce la lingua resta valida per la sessione corrente.
+        }
+    }
+
+    #endregion
+}

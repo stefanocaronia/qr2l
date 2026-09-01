@@ -12,12 +12,12 @@ public sealed partial class Form1 : Form
     private const string DonateUrl = "https://paypal.me/stefanocaronia";
     private const string LicenseUrl = "https://creativecommons.org/licenses/by-sa/4.0/";
     private const string RepoUrl = "https://github.com/stefanocaronia/qr2l";
-    private const string SetLogoText = "Set the logo";
-    private const string RemoveLogoText = "Remove the logo";
 
     private readonly Timer debounceTimer;
     private byte[]? pngData;
     private string? svgData;
+
+    private bool suppressLanguageEvent;
 
     private Color fgColor = Color.Black;
     private Color bgColor = Color.White;
@@ -47,13 +47,83 @@ public sealed partial class Form1 : Form
         panelBg.Cursor = Cursors.Hand;
         logoPath.Cursor = Cursors.Hand;
 
-        logoPath.Text = SetLogoText;
-
         saveAsDialog.Filter = BuildFilterFromEnum();
-        
+
+        Localization.Initialize();
+        PopulateLanguages();
+        ApplyLanguage();
 
         RefreshButtonStates();
     }
+
+
+    #region Localization
+
+    private void PopulateLanguages()
+    {
+        suppressLanguageEvent = true;
+
+        languageSelector.Items.Clear();
+
+        foreach (KeyValuePair<string, string> language in Localization.LanguageNames) {
+            var item = new LanguageItem(language.Key, language.Value);
+            languageSelector.Items.Add(item);
+
+            if (language.Key == Localization.CurrentLanguage) {
+                languageSelector.SelectedItem = item;
+            }
+        }
+
+        suppressLanguageEvent = false;
+    }
+
+    private void languageSelector_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (suppressLanguageEvent || languageSelector.SelectedItem is not LanguageItem item) {
+            return;
+        }
+
+        Localization.SetLanguage(item.Code);
+        ApplyLanguage();
+    }
+
+    /// <summary>
+    /// Applica la lingua corrente a tutti i testi dell'interfaccia.
+    /// </summary>
+    private void ApplyLanguage()
+    {
+        tooltip.SetToolTip(saveButton, Localization.T("tip_save"));
+        tooltip.SetToolTip(copyAsImageButton, Localization.T("tip_copy_image"));
+        tooltip.SetToolTip(copyAsSvgButton, Localization.T("tip_copy_svg"));
+        tooltip.SetToolTip(donateButton, Localization.T("tip_donate"));
+        tooltip.SetToolTip(helpButton, Localization.T("tip_help"));
+        tooltip.SetToolTip(languageSelector, Localization.T("tip_language"));
+        tooltip.SetToolTip(buttonRepo, Localization.T("tip_repo"));
+        tooltip.SetToolTip(panelFg, Localization.T("tip_fg"));
+        tooltip.SetToolTip(panelBg, Localization.T("tip_bg"));
+        tooltip.SetToolTip(textQrCode, Localization.T("tip_text"));
+        tooltip.SetToolTip(pictureQrCode, Localization.T("tip_picture"));
+        tooltip.SetToolTip(logoPath, Localization.T(logoBitmap != null ? "logo_remove" : "logo_set"));
+
+        textQrCode.PlaceholderText = Localization.T("tip_text");
+        logoPath.Text = Localization.T(logoBitmap != null ? "logo_remove" : "logo_set");
+
+        saveAsToolStripMenuItem.Text = Localization.T("menu_save_as");
+        copyAsImageToolStripMenuItem.Text = Localization.T("menu_copy_image");
+        copyAsSVGToolStripMenuItem.Text = Localization.T("menu_copy_svg");
+
+        saveAsDialog.Title = Localization.T("dlg_save_as");
+    }
+
+    private sealed record LanguageItem(string Code, string Name)
+    {
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
+
+    #endregion
 
     private void RefreshButtonStates()
     {
@@ -140,9 +210,9 @@ public sealed partial class Form1 : Form
             using var ms = new MemoryStream(pngData);
             using Image image = Image.FromStream(ms);
             Clipboard.SetImage(image);
-            MessageBox.Show("QR Code copied to clipboard as an image!", "Copy Image to Clipboard", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(Localization.T("msg_copied_image"), Localization.T("msg_copied_image_title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
         } catch (Exception ex) {
-            MessageBox.Show($"Error copying image to clipboard: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show($"{Localization.T("err_copy_image")} {ex.Message}", Localization.T("err_title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -154,16 +224,16 @@ public sealed partial class Form1 : Form
 
         try {
             Clipboard.SetText(svgData);
-            MessageBox.Show("SVG QR Code copied to clipboard as text!", "Copy SVG to Clipboard", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(Localization.T("msg_copied_svg"), Localization.T("msg_copied_svg_title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
         } catch (Exception ex) {
-            MessageBox.Show($"Error copying SVG to clipboard: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show($"{Localization.T("err_copy_svg")} {ex.Message}", Localization.T("err_title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
     private void SaveAs()
     {
         using var dialog = new SaveFileDialog();
-        dialog.Title = "Save As";
+        dialog.Title = Localization.T("dlg_save_as");
         dialog.Filter = BuildFilterFromEnum();
         dialog.AddExtension = true;
         dialog.OverwritePrompt = true;
@@ -188,7 +258,7 @@ public sealed partial class Form1 : Form
         string text = textQrCode.Text.Trim();
 
         if (string.IsNullOrEmpty(text)) {
-            MessageBox.Show("Please enter text to generate QR code.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(Localization.T("err_no_text"), Localization.T("err_title"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -197,7 +267,7 @@ public sealed partial class Form1 : Form
             byte[] data = QrGenerator.Generate(text, format, options);
             File.WriteAllBytes(path, data);
         } catch (Exception ex) {
-            MessageBox.Show($"Error exporting {format}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show($"{Localization.T("err_export")} {format}: {ex.Message}", Localization.T("err_title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -225,17 +295,18 @@ public sealed partial class Form1 : Form
 
     private void logoPath_Click(object sender, EventArgs e)
     {
-        if (logoPath.Text == RemoveLogoText) {
+        if (logoBitmap != null) {
             ClearLogo();
         } else {
             OpenFileDialog? dialog = openFileDialog;
 
-            dialog.Title = SetLogoText;
-            dialog.Filter = "Image files|*.png;*.jpg;*.jpeg;*.bmp;*.gif";
+            dialog.Title = Localization.T("logo_set");
+            dialog.Filter = $"{Localization.T("dlg_image_files")}|*.png;*.jpg;*.jpeg;*.bmp;*.gif";
 
             if (dialog.ShowDialog() == DialogResult.OK) {
                 logoBitmap = new Bitmap(dialog.FileName);
-                logoPath.Text = RemoveLogoText;
+                logoPath.Text = Localization.T("logo_remove");
+                tooltip.SetToolTip(logoPath, Localization.T("logo_remove"));
             }
         }
 
@@ -245,7 +316,8 @@ public sealed partial class Form1 : Form
     private void ClearLogo()
     {
         logoBitmap = null;
-        logoPath.Text = SetLogoText;
+        logoPath.Text = Localization.T("logo_set");
+        tooltip.SetToolTip(logoPath, Localization.T("logo_set"));
     }
 
     private void imageMenu_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
@@ -292,26 +364,26 @@ public sealed partial class Form1 : Form
     private void helpButton_Click(object sender, EventArgs e)
     {
         string helpText = $"*** {Project.Title} ***\n\n" +
-            "- Enter the text you want to encode in the QR code in the text box.\n" +
-            "- Choose foreground and background colors by clicking on the color panels.\n" +
-            "- Optionally, add a logo by clicking on the logo box. Click again to clear the logo.\n" +
+            $"- {Localization.T("help_p1")}\n" +
+            $"- {Localization.T("help_p2")}\n" +
+            $"- {Localization.T("help_p3")}\n" +
             "\n" +
-            "The QR code preview will update automatically.\n" +
-            "Use the buttons to save the QR code or copy it to the clipboard as an image or SVG.\n\n" +
-            "Supported Formats (auto-detected):\n" +
-            "• URLs: http://, https://, ftp://, www., domain.com\n" +
-            "• Email: user@domain.com;subject;body (subject and body optional)\n" +
-            "• Phone: +1234567890 or (123) 456-7890\n" +
-            "• SMS: 1234567890;message text\n" +
-            "• WhatsApp: +1234567890;message text\n" +
-            "• WiFi: WIFI:NetworkName;password or WIFI:T:WPA;S:SSID;P:password;\n" +
-            "• Geolocation: 45.4642,9.1900 (latitude,longitude)\n" +
-            "• Contact: FirstName;LastName;Phone;Email\n" +
-            "• Event: Title;Description;Location;StartDate;EndDate\n" +
+            $"{Localization.T("help_p4")}\n" +
+            $"{Localization.T("help_p5")}\n\n" +
+            $"{Localization.T("help_formats")}\n" +
+            $"\u2022 {Localization.T("fmt_url")}: http://, https://, ftp://, www., domain.com\n" +
+            $"\u2022 {Localization.T("fmt_mail")}: user@domain.com;subject;body\n" +
+            $"\u2022 {Localization.T("fmt_phone")}: +1234567890\n" +
+            $"\u2022 {Localization.T("fmt_sms")}: 1234567890;message\n" +
+            $"\u2022 {Localization.T("fmt_whatsapp")}: +1234567890;message\n" +
+            $"\u2022 {Localization.T("fmt_wifi")}: WIFI:NetworkName;password\n" +
+            $"\u2022 {Localization.T("fmt_geo")}: 45.4642,9.1900\n" +
+            $"\u2022 {Localization.T("fmt_contact")}: FirstName;LastName;Phone;Email\n" +
+            $"\u2022 {Localization.T("fmt_event")}: Title;Description;Location;StartDate;EndDate\n" +
             "\n" +
-            "Note: WiFi networks require the WIFI: prefix. You can use the simplified\n" +
-            "format (WIFI:SSID;password) or the complete format for advanced options.";
-        MessageBox.Show(helpText, "Help", MessageBoxButtons.OK, MessageBoxIcon.Question);
+            Localization.T("help_note");
+
+        MessageBox.Show(helpText, Localization.T("help_title"), MessageBoxButtons.OK, MessageBoxIcon.Question);
     }
 
     private void donateButton_Click(object sender, EventArgs e)
@@ -324,7 +396,7 @@ public sealed partial class Form1 : Form
 
             Process.Start(psi);
         } catch (Exception ex) {
-            MessageBox.Show("Cannot open the url.\n\n" + ex.Message);
+            MessageBox.Show($"{Localization.T("err_open_url")}\n\n{ex.Message}", Localization.T("err_title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 

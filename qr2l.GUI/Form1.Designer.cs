@@ -40,6 +40,7 @@ sealed partial class Form1
         donateButton = new System.Windows.Forms.Button();
         helpButton = new System.Windows.Forms.Button();
         languageSelector = new System.Windows.Forms.ComboBox();
+        themeButton = new System.Windows.Forms.Button();
         optionsGrid = new System.Windows.Forms.TableLayoutPanel();
         panelFg = new System.Windows.Forms.Panel();
         panelBg = new System.Windows.Forms.Panel();
@@ -98,6 +99,7 @@ sealed partial class Form1
         toolBar.Controls.Add(copyAsSvgButton);
         toolBar.Controls.Add(spacer);
         toolBar.Controls.Add(languageSelector);
+        toolBar.Controls.Add(themeButton);
         toolBar.Controls.Add(donateButton);
         toolBar.Controls.Add(helpButton);
         toolBar.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -147,7 +149,7 @@ sealed partial class Form1
         // 
         spacer.Location = new System.Drawing.Point(93, 3);
         spacer.Name = "spacer";
-        spacer.Size = new System.Drawing.Size(100, 24);
+        spacer.Size = new System.Drawing.Size(90, 24);
         spacer.TabIndex = 6;
         spacer.UseWaitCursor = true;
         // 
@@ -178,7 +180,6 @@ sealed partial class Form1
         // languageSelector
         // 
         languageSelector.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-        languageSelector.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
         languageSelector.FormattingEnabled = true;
         languageSelector.Location = new System.Drawing.Point(219, 3);
         languageSelector.Name = "languageSelector";
@@ -186,6 +187,16 @@ sealed partial class Form1
         languageSelector.TabIndex = 7;
         languageSelector.UseWaitCursor = true;
         languageSelector.SelectedIndexChanged += languageSelector_SelectedIndexChanged;
+        // 
+        // themeButton
+        // 
+        themeButton.Location = new System.Drawing.Point(304, 3);
+        themeButton.Name = "themeButton";
+        themeButton.Size = new System.Drawing.Size(24, 24);
+        themeButton.TabIndex = 8;
+        themeButton.UseVisualStyleBackColor = true;
+        themeButton.UseWaitCursor = true;
+        themeButton.Click += themeButton_Click;
         // 
         // optionsGrid
         // 
@@ -239,6 +250,7 @@ sealed partial class Form1
         logoPath.AutoSize = true;
         logoPath.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
         logoPath.Dock = System.Windows.Forms.DockStyle.Fill;
+        logoPath.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
         logoPath.Location = new System.Drawing.Point(185, 3);
         logoPath.Margin = new System.Windows.Forms.Padding(3);
         logoPath.Name = "logoPath";
@@ -417,6 +429,8 @@ sealed partial class Form1
     private System.Windows.Forms.Button helpButton;
 
     private System.Windows.Forms.ComboBox languageSelector;
+
+    private System.Windows.Forms.Button themeButton;
 
     private System.Windows.Forms.Button copyAsImageButton;
     private System.Windows.Forms.Button copyAsSvgButton;

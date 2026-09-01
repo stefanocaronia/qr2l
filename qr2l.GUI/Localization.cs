@@ -3,16 +3,15 @@ using System.Globalization;
 namespace qr2l.GUI;
 
 /// <summary>
-/// Localizzazione della GUI: dizionario incorporato, rilevamento automatico dalla lingua di Windows
-/// e persistenza della scelta manuale dell'utente.
+///     Localizzazione della GUI: dizionario incorporato, rilevamento automatico dalla lingua di Windows
+///     e persistenza della scelta manuale dell'utente.
 /// </summary>
 public static class Localization
 {
     #region Constants and Fields
 
     private const string DefaultLanguage = "en";
-    private const string SettingsFolderName = "qr2l";
-    private const string SettingsFileName = "language.txt";
+    private const string SettingsKey = "language";
 
     private static readonly Dictionary<string, string> languageNames = new() {
         ["en"] = "English",
@@ -27,7 +26,6 @@ public static class Localization
         ["ko"] = "한국어"
     };
 
-
     private static readonly Dictionary<string, Dictionary<string, string>> strings = new() {
         ["en"] = new Dictionary<string, string> {
             ["tip_save"] = "Save the QR Code",
@@ -36,6 +34,7 @@ public static class Localization
             ["tip_donate"] = "Buy me a coffee",
             ["tip_help"] = "Help",
             ["tip_language"] = "Language",
+            ["tip_theme"] = "Toggle theme",
             ["tip_repo"] = "Open the project repository",
             ["tip_fg"] = "Sets the pixel color",
             ["tip_bg"] = "Sets the background color",
@@ -84,6 +83,7 @@ public static class Localization
             ["tip_donate"] = "Offrimi un caffè",
             ["tip_help"] = "Aiuto",
             ["tip_language"] = "Lingua",
+            ["tip_theme"] = "Cambia tema",
             ["tip_repo"] = "Apri il repository del progetto",
             ["tip_fg"] = "Imposta il colore dei pixel",
             ["tip_bg"] = "Imposta il colore di sfondo",
@@ -132,6 +132,7 @@ public static class Localization
             ["tip_donate"] = "Invítame a un café",
             ["tip_help"] = "Ayuda",
             ["tip_language"] = "Idioma",
+            ["tip_theme"] = "Cambiar tema",
             ["tip_repo"] = "Abrir el repositorio del proyecto",
             ["tip_fg"] = "Define el color de los píxeles",
             ["tip_bg"] = "Define el color de fondo",
@@ -180,6 +181,7 @@ public static class Localization
             ["tip_donate"] = "Offrez-moi un café",
             ["tip_help"] = "Aide",
             ["tip_language"] = "Langue",
+            ["tip_theme"] = "Changer de thème",
             ["tip_repo"] = "Ouvrir le dépôt du projet",
             ["tip_fg"] = "Définit la couleur des pixels",
             ["tip_bg"] = "Définit la couleur d'arrière-plan",
@@ -228,6 +230,7 @@ public static class Localization
             ["tip_donate"] = "Spendiere mir einen Kaffee",
             ["tip_help"] = "Hilfe",
             ["tip_language"] = "Sprache",
+            ["tip_theme"] = "Design wechseln",
             ["tip_repo"] = "Projekt-Repository öffnen",
             ["tip_fg"] = "Legt die Pixelfarbe fest",
             ["tip_bg"] = "Legt die Hintergrundfarbe fest",
@@ -276,6 +279,7 @@ public static class Localization
             ["tip_donate"] = "Paga-me um café",
             ["tip_help"] = "Ajuda",
             ["tip_language"] = "Idioma",
+            ["tip_theme"] = "Mudar tema",
             ["tip_repo"] = "Abrir o repositório do projeto",
             ["tip_fg"] = "Define a cor dos pixels",
             ["tip_bg"] = "Define a cor de fundo",
@@ -324,6 +328,7 @@ public static class Localization
             ["tip_donate"] = "Купить мне кофе",
             ["tip_help"] = "Справка",
             ["tip_language"] = "Язык",
+            ["tip_theme"] = "Сменить тему",
             ["tip_repo"] = "Открыть репозиторий проекта",
             ["tip_fg"] = "Задаёт цвет пикселей",
             ["tip_bg"] = "Задаёт цвет фона",
@@ -372,6 +377,7 @@ public static class Localization
             ["tip_donate"] = "请我喝杯咖啡",
             ["tip_help"] = "帮助",
             ["tip_language"] = "语言",
+            ["tip_theme"] = "切换主题",
             ["tip_repo"] = "打开项目仓库",
             ["tip_fg"] = "设置像素颜色",
             ["tip_bg"] = "设置背景颜色",
@@ -420,6 +426,7 @@ public static class Localization
             ["tip_donate"] = "コーヒーをおごる",
             ["tip_help"] = "ヘルプ",
             ["tip_language"] = "言語",
+            ["tip_theme"] = "テーマを切り替え",
             ["tip_repo"] = "プロジェクトのリポジトリを開く",
             ["tip_fg"] = "ピクセルの色を設定します",
             ["tip_bg"] = "背景の色を設定します",
@@ -468,6 +475,7 @@ public static class Localization
             ["tip_donate"] = "커피 사주기",
             ["tip_help"] = "도움말",
             ["tip_language"] = "언어",
+            ["tip_theme"] = "테마 전환",
             ["tip_repo"] = "프로젝트 저장소 열기",
             ["tip_fg"] = "픽셀 색상을 설정합니다",
             ["tip_bg"] = "배경 색상을 설정합니다",
@@ -511,47 +519,40 @@ public static class Localization
         }
     };
 
-    private static string currentLanguage = DefaultLanguage;
-
     #endregion
 
     #region Properties
 
-    public static string CurrentLanguage => currentLanguage;
+    public static string CurrentLanguage { get; private set; } = DefaultLanguage;
 
     public static IReadOnlyDictionary<string, string> LanguageNames => languageNames;
-
-    private static string SettingsPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        SettingsFolderName,
-        SettingsFileName);
 
     #endregion
 
     #region Public Methods
 
     /// <summary>
-    /// Imposta la lingua iniziale: quella salvata dall'utente, altrimenti quella di Windows.
+    ///     Imposta la lingua iniziale: quella salvata dall'utente, altrimenti quella di Windows.
     /// </summary>
     public static void Initialize()
     {
         string? saved = LoadSavedLanguage();
 
-        currentLanguage = saved ?? DetectSystemLanguage();
+        CurrentLanguage = saved ?? DetectSystemLanguage();
     }
 
     public static void SetLanguage(string language)
     {
-        currentLanguage = strings.ContainsKey(language) ? language : DefaultLanguage;
-        SaveLanguage(currentLanguage);
+        CurrentLanguage = strings.ContainsKey(language) ? language : DefaultLanguage;
+        SaveLanguage(CurrentLanguage);
     }
 
     /// <summary>
-    /// Restituisce la stringa localizzata, con fallback all'inglese e infine alla chiave stessa.
+    ///     Restituisce la stringa localizzata, con fallback all'inglese e infine alla chiave stessa.
     /// </summary>
     public static string T(string key)
     {
-        if (strings.TryGetValue(currentLanguage, out Dictionary<string, string>? table) &&
+        if (strings.TryGetValue(CurrentLanguage, out Dictionary<string, string>? table) &&
             table.TryGetValue(key, out string? value)) {
             return value;
         }
@@ -579,31 +580,14 @@ public static class Localization
 
     private static string? LoadSavedLanguage()
     {
-        try {
-            if (!File.Exists(SettingsPath)) {
-                return null;
-            }
+        string? code = UserSettings.Get(SettingsKey)?.Trim().ToLowerInvariant();
 
-            string code = File.ReadAllText(SettingsPath).Trim().ToLowerInvariant();
-            return strings.ContainsKey(code) ? code : null;
-        } catch {
-            return null;
-        }
+        return code != null && strings.ContainsKey(code) ? code : null;
     }
 
     private static void SaveLanguage(string language)
     {
-        try {
-            string? folder = Path.GetDirectoryName(SettingsPath);
-
-            if (folder != null && !Directory.Exists(folder)) {
-                Directory.CreateDirectory(folder);
-            }
-
-            File.WriteAllText(SettingsPath, language);
-        } catch {
-            // La persistenza è un optional: se fallisce la lingua resta valida per la sessione corrente.
-        }
+        UserSettings.Set(SettingsKey, language);
     }
 
     #endregion

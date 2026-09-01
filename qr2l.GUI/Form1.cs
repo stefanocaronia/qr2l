@@ -53,6 +53,9 @@ public sealed partial class Form1 : Form
         PopulateLanguages();
         ApplyLanguage();
 
+        AppTheme.Initialize();
+        ApplyTheme();
+
         RefreshButtonStates();
     }
 
@@ -98,6 +101,7 @@ public sealed partial class Form1 : Form
         tooltip.SetToolTip(donateButton, Localization.T("tip_donate"));
         tooltip.SetToolTip(helpButton, Localization.T("tip_help"));
         tooltip.SetToolTip(languageSelector, Localization.T("tip_language"));
+        tooltip.SetToolTip(themeButton, Localization.T("tip_theme"));
         tooltip.SetToolTip(buttonRepo, Localization.T("tip_repo"));
         tooltip.SetToolTip(panelFg, Localization.T("tip_fg"));
         tooltip.SetToolTip(panelBg, Localization.T("tip_bg"));
@@ -121,6 +125,32 @@ public sealed partial class Form1 : Form
         {
             return Name;
         }
+    }
+
+    #endregion
+
+
+    #region Theme
+
+    private void themeButton_Click(object sender, EventArgs e)
+    {
+        AppTheme.Toggle();
+        ApplyTheme();
+    }
+
+    /// <summary>
+    /// Applica il tema corrente e ridisegna le icone che devono seguirne i colori.
+    /// </summary>
+    private void ApplyTheme()
+    {
+        AppTheme.Apply(this);
+
+        // In tema scuro si mostra il sole (per passare al chiaro), e viceversa
+        themeButton.Image?.Dispose();
+        themeButton.Image = AppTheme.IsDark ? Icons.Sun() : Icons.Moon();
+
+        logoPath.Image?.Dispose();
+        logoPath.Image = Icons.Picture(AppTheme.Foreground);
     }
 
     #endregion

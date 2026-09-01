@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -62,27 +62,41 @@
 
         <!-- Toolbar -->
         <div class="flex items-center bg-gray-100 dark:bg-gray-800 p-2 border-b border-gray-200 dark:border-gray-700 space-x-2">
-            <button onclick="saveImage()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" title="Salva QR Code">
+            <button onclick="saveImage()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" data-i18n-title="title_save">
                 <i class="fas fa-save text-blue-600"></i>
             </button>
-            <button onclick="copyImage()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" title="Copia Immagine">
+            <button onclick="copyImage()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" data-i18n-title="title_copy_image">
                 <i class="fas fa-clipboard text-gray-700 dark:text-gray-300"></i>
             </button>
-            <!-- SVG non supportato nativamente in modo semplice con loghi lato client in JS puro quanto Canvas, 
+            <!-- SVG non supportato nativamente in modo semplice con loghi lato client in JS puro quanto Canvas,
                  ma manteniamo il pulsante per fedeltà UI (mostrerà un alert) -->
-            <button onclick="copySvgWarning()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" title="Copia SVG (Solo testo)">
+            <button onclick="copySvgWarning()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" data-i18n-title="title_copy_svg">
                 <i class="fas fa-puzzle-piece text-green-600"></i>
             </button>
-            
+
             <div class="flex-grow"></div>
-            
-            <button onclick="openDonate()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" title="Offrimi un caffè">
+
+            <select id="lang-select" onchange="setLanguage(this.value)" data-i18n-title="title_lang"
+                class="text-xs bg-transparent border border-gray-300 dark:border-gray-600 dark:text-gray-200 rounded px-1 py-1 cursor-pointer focus:outline-none">
+                <option value="en">EN</option>
+                <option value="it">IT</option>
+                <option value="es">ES</option>
+                <option value="fr">FR</option>
+                <option value="de">DE</option>
+                <option value="pt">PT</option>
+                <option value="ru">RU</option>
+                <option value="zh">中文</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+            </select>
+
+            <button onclick="openDonate()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" data-i18n-title="title_donate">
                 <i class="fas fa-heart text-red-500"></i>
             </button>
-            <button onclick="showHelp()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" title="Aiuto">
+            <button onclick="showHelp()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" data-i18n-title="title_help">
                 <i class="fas fa-question-circle text-blue-500"></i>
             </button>
-            <button id="theme-toggle" onclick="toggleTheme()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" title="Cambia tema">
+            <button id="theme-toggle" onclick="toggleTheme()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" data-i18n-title="title_theme">
                 <i id="theme-icon" class="fas fa-sun text-yellow-500"></i>
             </button>
         </div>
@@ -92,7 +106,7 @@
             <!-- Foreground Color -->
             <div class="relative group">
                 <div id="fg-preview" class="w-full h-8 border border-gray-400 dark:border-gray-600 cursor-pointer bg-black flex items-center justify-center text-xs text-white shadow-sm" onclick="document.getElementById('fg-color').click()">
-                    Colore Pixel
+                    <span data-i18n="fg_color">Pixel Color</span>
                 </div>
                 <input type="color" id="fg-color" class="hidden-input" value="#000000" onchange="updateColor('fg', this.value)">
             </div>
@@ -100,7 +114,7 @@
             <!-- Background Color -->
             <div class="relative group">
                 <div id="bg-preview" class="w-full h-8 border border-gray-400 dark:border-gray-600 cursor-pointer bg-white flex items-center justify-center text-xs text-gray-800 shadow-sm" onclick="document.getElementById('bg-color').click()">
-                    Sfondo
+                    <span data-i18n="bg_color">Background</span>
                 </div>
                 <input type="color" id="bg-color" class="hidden-input" value="#ffffff" onchange="updateColor('bg', this.value)">
             </div>
@@ -108,7 +122,7 @@
             <!-- Logo Upload -->
             <div class="relative group">
                 <div id="logo-btn" class="w-full h-8 border border-gray-400 dark:border-gray-600 cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 flex items-center justify-center text-xs text-gray-700 dark:text-gray-200 overflow-hidden whitespace-nowrap px-1" onclick="handleLogoClick()">
-                    Inserisci Logo
+                    <span id="logo-btn-label" data-i18n="logo_add">Add Logo</span>
                 </div>
                 <input type="file" id="logo-upload" class="hidden-input" accept="image/*" onchange="handleLogoUpload(this)">
             </div>
@@ -118,7 +132,8 @@
         <div class="p-2 flex-shrink-0">
             <textarea id="qr-text" 
                 class="w-full h-24 p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 rounded resize-none focus:outline-none focus:border-blue-500 text-sm font-mono"
-                placeholder="Inserisci qui il testo per il QR Code..."
+                data-i18n-placeholder="placeholder"
+                placeholder="Enter the text for the QR Code here..."
                 oninput="debounceGenerate()"></textarea>
         </div>
 
@@ -126,7 +141,7 @@
         <div class="flex-grow bg-gray-200 dark:bg-gray-800 flex items-center justify-center p-4 overflow-hidden relative">
             <div id="qr-preview" class="bg-transparent">
                 <!-- QR Canvas will be injected here -->
-                <div class="text-gray-500 dark:text-gray-400 text-sm italic">In attesa di input...</div>
+                <div class="text-gray-500 dark:text-gray-400 text-sm italic" data-i18n="waiting">Waiting for input...</div>
             </div>
         </div>
 
@@ -142,26 +157,264 @@
     <!-- Modal Help (Hidden by default) -->
     <div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white dark:bg-gray-800 p-6 rounded shadow-xl max-w-lg w-full m-4">
-            <h3 class="font-bold text-lg mb-4 dark:text-gray-100">qr2l - Guida</h3>
+            <h3 class="font-bold text-lg mb-4 dark:text-gray-100" data-i18n="help_title">qr2l - Help</h3>
             <div class="text-sm space-y-2 overflow-y-auto max-h-64 text-gray-700 dark:text-gray-300">
-                <p>Inserisci il testo nella casella per generare il QR.</p>
-                <p>Clicca sui riquadri colore per cambiare i colori.</p>
-                <p>Clicca su "Inserisci Logo" per caricare un'immagine al centro.</p>
+                <p data-i18n="help_p1">Enter your text in the box to generate the QR code.</p>
+                <p data-i18n="help_p2">Click the color boxes to change the colors.</p>
+                <p data-i18n="help_p3">Click "Add Logo" to place an image in the center.</p>
                 <hr class="my-2">
-                <strong>Formati Supportati (Rilevamento Auto):</strong>
+                <strong data-i18n="help_formats">Supported formats (auto-detected):</strong>
                 <ul class="list-disc pl-5 space-y-1">
                     <li>URL: http://, https://, www.</li>
-                    <li>Email: mailto: o email semplice</li>
-                    <li>WiFi: WIFI:S:NomeRete;P:Password; (o testo semplice per auto-format)</li>
-                    <li>Coordinate: lat,lon</li>
-                    <li>Telefono/SMS/WhatsApp</li>
+                    <li data-i18n="help_mail">Email: mailto: or plain email address</li>
+                    <li data-i18n="help_wifi">WiFi: WIFI:S:NetworkName;P:Password; (or plain text for auto-format)</li>
+                    <li data-i18n="help_geo">Coordinates: lat,lon</li>
+                    <li data-i18n="help_phone">Phone/SMS/WhatsApp</li>
                 </ul>
             </div>
-            <button onclick="document.getElementById('help-modal').classList.add('hidden')" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700">Chiudi</button>
+            <button onclick="document.getElementById('help-modal').classList.add('hidden')" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700" data-i18n="close">Close</button>
         </div>
     </div>
 
     <script>
+        // --- i18n ---
+        const I18N = {
+            en: {
+                title_save: "Save QR Code", title_copy_image: "Copy Image", title_copy_svg: "Copy SVG (text only)",
+                title_donate: "Buy me a coffee", title_help: "Help", title_theme: "Toggle theme", title_lang: "Language",
+                fg_color: "Pixel Color", bg_color: "Background", logo_add: "Add Logo", logo_remove: "Remove Logo",
+                placeholder: "Enter the text for the QR Code here...", waiting: "Waiting for input...", gen_error: "Generation error",
+                help_title: "qr2l - Help",
+                help_p1: "Enter your text in the box to generate the QR code.",
+                help_p2: "Click the color boxes to change the colors.",
+                help_p3: "Click \"Add Logo\" to place an image in the center.",
+                help_formats: "Supported formats (auto-detected):",
+                help_mail: "Email: mailto: or plain email address",
+                help_wifi: "WiFi: WIFI:S:NetworkName;P:Password; (or plain text for auto-format)",
+                help_geo: "Coordinates: lat,lon", help_phone: "Phone/SMS/WhatsApp", close: "Close",
+                alert_no_qr: "No QR code generated to save.",
+                alert_copied: "Image copied to clipboard!",
+                alert_copied_alt: "Image copied to clipboard (fallback method)!",
+                alert_copy_blocked: "The browser blocked automatic copying. Please right-click the image and select 'Copy image'.",
+                alert_svg: "SVG copy is not supported in this web version with an embedded logo. Use 'Copy Image' to get the displayed result."
+            },
+            it: {
+                title_save: "Salva QR Code", title_copy_image: "Copia Immagine", title_copy_svg: "Copia SVG (solo testo)",
+                title_donate: "Offrimi un caffè", title_help: "Aiuto", title_theme: "Cambia tema", title_lang: "Lingua",
+                fg_color: "Colore Pixel", bg_color: "Sfondo", logo_add: "Inserisci Logo", logo_remove: "Rimuovi Logo",
+                placeholder: "Inserisci qui il testo per il QR Code...", waiting: "In attesa di input...", gen_error: "Errore generazione",
+                help_title: "qr2l - Guida",
+                help_p1: "Inserisci il testo nella casella per generare il QR.",
+                help_p2: "Clicca sui riquadri colore per cambiare i colori.",
+                help_p3: "Clicca su \"Inserisci Logo\" per caricare un'immagine al centro.",
+                help_formats: "Formati supportati (rilevamento automatico):",
+                help_mail: "Email: mailto: o email semplice",
+                help_wifi: "WiFi: WIFI:S:NomeRete;P:Password; (o testo semplice per auto-format)",
+                help_geo: "Coordinate: lat,lon", help_phone: "Telefono/SMS/WhatsApp", close: "Chiudi",
+                alert_no_qr: "Nessun QR code generato da salvare.",
+                alert_copied: "Immagine copiata negli appunti!",
+                alert_copied_alt: "Immagine copiata negli appunti (metodo alternativo)!",
+                alert_copy_blocked: "Il browser ha bloccato la copia automatica. Clicca con il tasto destro sull'immagine e seleziona 'Copia immagine'.",
+                alert_svg: "La copia in formato SVG non è supportata in questa versione web con logo integrato. Utilizza 'Copia Immagine' per ottenere il risultato visualizzato."
+            },
+            es: {
+                title_save: "Guardar código QR", title_copy_image: "Copiar imagen", title_copy_svg: "Copiar SVG (solo texto)",
+                title_donate: "Invítame a un café", title_help: "Ayuda", title_theme: "Cambiar tema", title_lang: "Idioma",
+                fg_color: "Color del píxel", bg_color: "Fondo", logo_add: "Añadir logo", logo_remove: "Quitar logo",
+                placeholder: "Introduce aquí el texto para el código QR...", waiting: "Esperando entrada...", gen_error: "Error de generación",
+                help_title: "qr2l - Ayuda",
+                help_p1: "Introduce el texto en el cuadro para generar el código QR.",
+                help_p2: "Haz clic en los cuadros de color para cambiar los colores.",
+                help_p3: "Haz clic en \"Añadir logo\" para colocar una imagen en el centro.",
+                help_formats: "Formatos admitidos (detección automática):",
+                help_mail: "Email: mailto: o dirección de correo simple",
+                help_wifi: "WiFi: WIFI:S:NombreRed;P:Contraseña; (o texto simple para formato automático)",
+                help_geo: "Coordenadas: lat,lon", help_phone: "Teléfono/SMS/WhatsApp", close: "Cerrar",
+                alert_no_qr: "No hay ningún código QR generado para guardar.",
+                alert_copied: "¡Imagen copiada al portapapeles!",
+                alert_copied_alt: "¡Imagen copiada al portapapeles (método alternativo)!",
+                alert_copy_blocked: "El navegador bloqueó la copia automática. Haz clic derecho en la imagen y selecciona 'Copiar imagen'.",
+                alert_svg: "La copia en formato SVG no es compatible con esta versión web con logo integrado. Usa 'Copiar imagen' para obtener el resultado mostrado."
+            },
+            fr: {
+                title_save: "Enregistrer le QR Code", title_copy_image: "Copier l'image", title_copy_svg: "Copier le SVG (texte seul)",
+                title_donate: "Offrez-moi un café", title_help: "Aide", title_theme: "Changer de thème", title_lang: "Langue",
+                fg_color: "Couleur des pixels", bg_color: "Arrière-plan", logo_add: "Ajouter un logo", logo_remove: "Retirer le logo",
+                placeholder: "Saisissez ici le texte du QR Code...", waiting: "En attente de saisie...", gen_error: "Erreur de génération",
+                help_title: "qr2l - Aide",
+                help_p1: "Saisissez le texte dans le champ pour générer le QR Code.",
+                help_p2: "Cliquez sur les carrés de couleur pour changer les couleurs.",
+                help_p3: "Cliquez sur \"Ajouter un logo\" pour placer une image au centre.",
+                help_formats: "Formats pris en charge (détection automatique) :",
+                help_mail: "E-mail : mailto: ou adresse e-mail simple",
+                help_wifi: "WiFi : WIFI:S:NomDuRéseau;P:MotDePasse; (ou texte simple pour le format automatique)",
+                help_geo: "Coordonnées : lat,lon", help_phone: "Téléphone/SMS/WhatsApp", close: "Fermer",
+                alert_no_qr: "Aucun QR Code généré à enregistrer.",
+                alert_copied: "Image copiée dans le presse-papiers !",
+                alert_copied_alt: "Image copiée dans le presse-papiers (méthode alternative) !",
+                alert_copy_blocked: "Le navigateur a bloqué la copie automatique. Faites un clic droit sur l'image et sélectionnez 'Copier l'image'.",
+                alert_svg: "La copie au format SVG n'est pas prise en charge dans cette version web avec logo intégré. Utilisez 'Copier l'image' pour obtenir le résultat affiché."
+            },
+            de: {
+                title_save: "QR-Code speichern", title_copy_image: "Bild kopieren", title_copy_svg: "SVG kopieren (nur Text)",
+                title_donate: "Spendiere mir einen Kaffee", title_help: "Hilfe", title_theme: "Design wechseln", title_lang: "Sprache",
+                fg_color: "Pixelfarbe", bg_color: "Hintergrund", logo_add: "Logo hinzufügen", logo_remove: "Logo entfernen",
+                placeholder: "Text für den QR-Code hier eingeben...", waiting: "Warte auf Eingabe...", gen_error: "Fehler bei der Erzeugung",
+                help_title: "qr2l - Hilfe",
+                help_p1: "Gib den Text in das Feld ein, um den QR-Code zu erzeugen.",
+                help_p2: "Klicke auf die Farbfelder, um die Farben zu ändern.",
+                help_p3: "Klicke auf \"Logo hinzufügen\", um ein Bild in die Mitte zu setzen.",
+                help_formats: "Unterstützte Formate (automatische Erkennung):",
+                help_mail: "E-Mail: mailto: oder einfache E-Mail-Adresse",
+                help_wifi: "WLAN: WIFI:S:Netzwerkname;P:Passwort; (oder einfacher Text für Auto-Format)",
+                help_geo: "Koordinaten: lat,lon", help_phone: "Telefon/SMS/WhatsApp", close: "Schließen",
+                alert_no_qr: "Kein QR-Code zum Speichern erzeugt.",
+                alert_copied: "Bild in die Zwischenablage kopiert!",
+                alert_copied_alt: "Bild in die Zwischenablage kopiert (alternative Methode)!",
+                alert_copy_blocked: "Der Browser hat das automatische Kopieren blockiert. Klicke mit der rechten Maustaste auf das Bild und wähle 'Bild kopieren'.",
+                alert_svg: "Das Kopieren als SVG wird in dieser Web-Version mit eingebettetem Logo nicht unterstützt. Verwende 'Bild kopieren', um das angezeigte Ergebnis zu erhalten."
+            },
+            pt: {
+                title_save: "Guardar código QR", title_copy_image: "Copiar imagem", title_copy_svg: "Copiar SVG (apenas texto)",
+                title_donate: "Paga-me um café", title_help: "Ajuda", title_theme: "Mudar tema", title_lang: "Idioma",
+                fg_color: "Cor do pixel", bg_color: "Fundo", logo_add: "Adicionar logótipo", logo_remove: "Remover logótipo",
+                placeholder: "Introduza aqui o texto para o código QR...", waiting: "À espera de entrada...", gen_error: "Erro de geração",
+                help_title: "qr2l - Ajuda",
+                help_p1: "Introduza o texto na caixa para gerar o código QR.",
+                help_p2: "Clique nos quadrados de cor para alterar as cores.",
+                help_p3: "Clique em \"Adicionar logótipo\" para colocar uma imagem no centro.",
+                help_formats: "Formatos suportados (deteção automática):",
+                help_mail: "Email: mailto: ou endereço de email simples",
+                help_wifi: "WiFi: WIFI:S:NomeDaRede;P:Palavra-passe; (ou texto simples para formato automático)",
+                help_geo: "Coordenadas: lat,lon", help_phone: "Telefone/SMS/WhatsApp", close: "Fechar",
+                alert_no_qr: "Nenhum código QR gerado para guardar.",
+                alert_copied: "Imagem copiada para a área de transferência!",
+                alert_copied_alt: "Imagem copiada para a área de transferência (método alternativo)!",
+                alert_copy_blocked: "O navegador bloqueou a cópia automática. Clique com o botão direito na imagem e selecione 'Copiar imagem'.",
+                alert_svg: "A cópia em formato SVG não é suportada nesta versão web com logótipo integrado. Utilize 'Copiar imagem' para obter o resultado apresentado."
+            },
+            ru: {
+                title_save: "Сохранить QR-код", title_copy_image: "Копировать изображение", title_copy_svg: "Копировать SVG (только текст)",
+                title_donate: "Купить мне кофе", title_help: "Справка", title_theme: "Сменить тему", title_lang: "Язык",
+                fg_color: "Цвет пикселей", bg_color: "Фон", logo_add: "Добавить логотип", logo_remove: "Убрать логотип",
+                placeholder: "Введите здесь текст для QR-кода...", waiting: "Ожидание ввода...", gen_error: "Ошибка генерации",
+                help_title: "qr2l - Справка",
+                help_p1: "Введите текст в поле, чтобы создать QR-код.",
+                help_p2: "Нажмите на цветные квадраты, чтобы изменить цвета.",
+                help_p3: "Нажмите «Добавить логотип», чтобы поместить изображение в центр.",
+                help_formats: "Поддерживаемые форматы (автоопределение):",
+                help_mail: "Email: mailto: или обычный адрес почты",
+                help_wifi: "WiFi: WIFI:S:ИмяСети;P:Пароль; (или обычный текст для автоформата)",
+                help_geo: "Координаты: широта,долгота", help_phone: "Телефон/SMS/WhatsApp", close: "Закрыть",
+                alert_no_qr: "Нет созданного QR-кода для сохранения.",
+                alert_copied: "Изображение скопировано в буфер обмена!",
+                alert_copied_alt: "Изображение скопировано в буфер обмена (альтернативный метод)!",
+                alert_copy_blocked: "Браузер заблокировал автоматическое копирование. Щёлкните правой кнопкой по изображению и выберите «Копировать изображение».",
+                alert_svg: "Копирование в формате SVG не поддерживается в этой веб-версии со встроенным логотипом. Используйте «Копировать изображение», чтобы получить показанный результат."
+            },
+            zh: {
+                title_save: "保存二维码", title_copy_image: "复制图片", title_copy_svg: "复制 SVG（仅文本）",
+                title_donate: "请我喝杯咖啡", title_help: "帮助", title_theme: "切换主题", title_lang: "语言",
+                fg_color: "像素颜色", bg_color: "背景", logo_add: "添加标志", logo_remove: "移除标志",
+                placeholder: "在此输入二维码内容...", waiting: "等待输入...", gen_error: "生成错误",
+                help_title: "qr2l - 帮助",
+                help_p1: "在文本框中输入内容以生成二维码。",
+                help_p2: "点击颜色方块以更改颜色。",
+                help_p3: "点击“添加标志”可在中心放置图片。",
+                help_formats: "支持的格式（自动识别）：",
+                help_mail: "电子邮件：mailto: 或普通邮箱地址",
+                help_wifi: "WiFi：WIFI:S:网络名称;P:密码;（或使用普通文本自动格式化）",
+                help_geo: "坐标：纬度,经度", help_phone: "电话/短信/WhatsApp", close: "关闭",
+                alert_no_qr: "没有可保存的二维码。",
+                alert_copied: "图片已复制到剪贴板！",
+                alert_copied_alt: "图片已复制到剪贴板（备用方式）！",
+                alert_copy_blocked: "浏览器阻止了自动复制。请右键点击图片并选择“复制图片”。",
+                alert_svg: "此网页版在包含标志时不支持复制 SVG。请使用“复制图片”获取显示的结果。"
+            },
+            ja: {
+                title_save: "QRコードを保存", title_copy_image: "画像をコピー", title_copy_svg: "SVGをコピー（テキストのみ）",
+                title_donate: "コーヒーをおごる", title_help: "ヘルプ", title_theme: "テーマを切り替え", title_lang: "言語",
+                fg_color: "ピクセルの色", bg_color: "背景", logo_add: "ロゴを追加", logo_remove: "ロゴを削除",
+                placeholder: "QRコードにするテキストを入力...", waiting: "入力待ちです...", gen_error: "生成エラー",
+                help_title: "qr2l - ヘルプ",
+                help_p1: "ボックスにテキストを入力するとQRコードが生成されます。",
+                help_p2: "カラーボックスをクリックすると色を変更できます。",
+                help_p3: "「ロゴを追加」をクリックすると中央に画像を配置できます。",
+                help_formats: "対応フォーマット（自動判別）:",
+                help_mail: "メール: mailto: または通常のメールアドレス",
+                help_wifi: "WiFi: WIFI:S:ネットワーク名;P:パスワード;（または自動整形用のテキスト）",
+                help_geo: "座標: 緯度,経度", help_phone: "電話/SMS/WhatsApp", close: "閉じる",
+                alert_no_qr: "保存できるQRコードがありません。",
+                alert_copied: "画像をクリップボードにコピーしました！",
+                alert_copied_alt: "画像をクリップボードにコピーしました（代替方法）！",
+                alert_copy_blocked: "ブラウザが自動コピーをブロックしました。画像を右クリックして「画像をコピー」を選択してください。",
+                alert_svg: "ロゴ付きのこのWeb版ではSVGのコピーに対応していません。表示された結果を得るには「画像をコピー」を使用してください。"
+            },
+            ko: {
+                title_save: "QR 코드 저장", title_copy_image: "이미지 복사", title_copy_svg: "SVG 복사 (텍스트만)",
+                title_donate: "커피 사주기", title_help: "도움말", title_theme: "테마 전환", title_lang: "언어",
+                fg_color: "픽셀 색상", bg_color: "배경", logo_add: "로고 추가", logo_remove: "로고 제거",
+                placeholder: "QR 코드에 넣을 텍스트를 입력하세요...", waiting: "입력을 기다리는 중...", gen_error: "생성 오류",
+                help_title: "qr2l - 도움말",
+                help_p1: "상자에 텍스트를 입력하면 QR 코드가 생성됩니다.",
+                help_p2: "색상 상자를 클릭하여 색을 변경하세요.",
+                help_p3: "\"로고 추가\"를 클릭하면 가운데에 이미지를 넣을 수 있습니다.",
+                help_formats: "지원 형식 (자동 인식):",
+                help_mail: "이메일: mailto: 또는 일반 이메일 주소",
+                help_wifi: "WiFi: WIFI:S:네트워크이름;P:비밀번호; (또는 자동 형식용 일반 텍스트)",
+                help_geo: "좌표: 위도,경도", help_phone: "전화/SMS/WhatsApp", close: "닫기",
+                alert_no_qr: "저장할 QR 코드가 없습니다.",
+                alert_copied: "이미지를 클립보드에 복사했습니다!",
+                alert_copied_alt: "이미지를 클립보드에 복사했습니다 (대체 방법)!",
+                alert_copy_blocked: "브라우저가 자동 복사를 차단했습니다. 이미지를 오른쪽 클릭한 뒤 '이미지 복사'를 선택하세요.",
+                alert_svg: "로고가 포함된 이 웹 버전에서는 SVG 복사를 지원하지 않습니다. 표시된 결과를 얻으려면 '이미지 복사'를 사용하세요."
+            }
+        };
+
+        let currentLang = 'en';
+
+        function t(key) {
+            return (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
+        }
+
+        function detectLanguage() {
+            let saved = null;
+            try { saved = localStorage.getItem('lang'); } catch (e) { /* storage non disponibile */ }
+            if (saved && I18N[saved]) return saved;
+
+            const candidates = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+            for (const entry of candidates) {
+                if (!entry) continue;
+                const code = entry.toLowerCase().split('-')[0];
+                if (I18N[code]) return code;
+            }
+            return 'en';
+        }
+
+        function setLanguage(lang) {
+            currentLang = I18N[lang] ? lang : 'en';
+            try { localStorage.setItem('lang', currentLang); } catch (e) { /* storage non disponibile */ }
+            applyLanguage();
+        }
+
+        function applyLanguage() {
+            document.documentElement.lang = currentLang;
+            document.getElementById('lang-select').value = currentLang;
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.textContent = t(el.getAttribute('data-i18n'));
+            });
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                el.title = t(el.getAttribute('data-i18n-title'));
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+            });
+
+            // Il pulsante logo cambia etichetta in base allo stato corrente
+            document.getElementById('logo-btn-label').textContent = currentLogo ? t('logo_remove') : t('logo_add');
+        }
+
         // --- State ---
         let qrObject = null;
         let debounceTimer;
@@ -185,6 +438,8 @@
         // --- Initialization ---
         window.onload = () => {
             updateThemeIcon();
+            currentLang = detectLanguage();
+            applyLanguage();
         };
 
         // --- Theme ---
@@ -216,7 +471,7 @@
             container.innerHTML = '';
 
             if (!rawText.trim()) {
-                container.innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-sm italic">In attesa di input...</div>';
+                container.innerHTML = `<div class="text-gray-500 dark:text-gray-400 text-sm italic" data-i18n="waiting">${t('waiting')}</div>`;
                 document.getElementById('detected-mode').innerText = "Text";
                 return;
             }
@@ -250,7 +505,7 @@
                 qrObject = new QRCode(container, options);
             } catch (e) {
                 console.error(e);
-                container.innerHTML = '<div class="text-red-500">Errore generazione</div>';
+                container.innerHTML = `<div class="text-red-500">${t('gen_error')}</div>`;
             }
         }
 
@@ -334,9 +589,9 @@
 
         function handleLogoClick() {
             const btn = document.getElementById('logo-btn');
-            if (btn.innerText === "Rimuovi Logo") {
+            if (currentLogo) {
                 currentLogo = null;
-                btn.innerText = "Inserisci Logo";
+                document.getElementById('logo-btn-label').textContent = t('logo_add');
                 btn.classList.remove('bg-red-100', 'text-red-700', 'dark:bg-red-900', 'dark:text-red-200');
                 btn.classList.add('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-200');
                 document.getElementById('logo-upload').value = ""; // reset input
@@ -354,7 +609,7 @@
                     
                     // Update UI button
                     const btn = document.getElementById('logo-btn');
-                    btn.innerText = "Rimuovi Logo";
+                    document.getElementById('logo-btn-label').textContent = t('logo_remove');
                     btn.classList.remove('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-200');
                     btn.classList.add('bg-red-100', 'text-red-700', 'dark:bg-red-900', 'dark:text-red-200');
                     
@@ -369,7 +624,7 @@
         function saveImage() {
             const canvas = document.querySelector('#qr-preview canvas');
             if (!canvas) {
-                alert("Nessun QR code generato da salvare.");
+                alert(t('alert_no_qr'));
                 return;
             }
             const link = document.createElement('a');
@@ -392,7 +647,7 @@
                         const item = new ClipboardItem({ "image/png": blob });
                         navigator.clipboard.write([item])
                             .then(() => {
-                                alert("Immagine copiata negli appunti!");
+                                alert(t('alert_copied'));
                             })
                             .catch((err) => {
                                 console.warn("Errore Async Clipboard:", err);
@@ -433,20 +688,20 @@
                 document.body.removeChild(div);
                 
                 if (successful) {
-                    alert("Immagine copiata negli appunti (metodo alternativo)!");
+                    alert(t('alert_copied_alt'));
                 } else {
                     throw new Error("Comando copy fallito");
                 }
             } catch (e) {
                 console.error("Fallback fallito:", e);
-                alert("Il browser ha bloccato la copia automatica. Per favore, clicca con il tasto destro sull'immagine e seleziona 'Copia immagine'.");
+                alert(t('alert_copy_blocked'));
             }
         }
 
         function copySvgWarning() {
             // EasyQRCodeJS draws to Canvas primarily for logo support. 
             // Generating a true SVG with an embedded raster logo client-side is complex.
-            alert("La copia in formato SVG non è supportata in questa versione web con logo integrato. Utilizza 'Copia Immagine' per ottenere il risultato visualizzato.");
+            alert(t('alert_svg'));
         }
 
         function openDonate() {

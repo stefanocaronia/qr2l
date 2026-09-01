@@ -411,7 +411,7 @@ public static class QrGenerator
     {
         // Porzione del lato occupata dal logo e margine attorno, in frazione del logo stesso
         const float logoWidthRatio = 0.24f;
-        const float paddingRatio = 0.14f;
+        const float paddingRatio = 0.07f;
 
         float logoWidth = bitmap.Width * logoWidthRatio;
         float logoHeight = logoWidth * logo.Height / logo.Width;
@@ -431,26 +431,11 @@ public static class QrGenerator
         graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
         graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
-        using (var brush = new SolidBrush(backgroundColor))
-        using (GraphicsPath path = CreateRoundedRectangle(background, padding * 1.6f)) {
-            graphics.FillPath(brush, path);
+        using (var brush = new SolidBrush(backgroundColor)) {
+            graphics.FillRectangle(brush, background);
         }
 
         graphics.DrawImage(logo, new RectangleF(x, y, logoWidth, logoHeight));
-    }
-
-    private static GraphicsPath CreateRoundedRectangle(RectangleF rectangle, float radius)
-    {
-        float diameter = Math.Min(radius * 2f, Math.Min(rectangle.Width, rectangle.Height));
-        var path = new GraphicsPath();
-
-        path.AddArc(rectangle.X, rectangle.Y, diameter, diameter, 180f, 90f);
-        path.AddArc(rectangle.Right - diameter, rectangle.Y, diameter, diameter, 270f, 90f);
-        path.AddArc(rectangle.Right - diameter, rectangle.Bottom - diameter, diameter, diameter, 0f, 90f);
-        path.AddArc(rectangle.X, rectangle.Bottom - diameter, diameter, diameter, 90f, 90f);
-        path.CloseFigure();
-
-        return path;
     }
 
     private static byte[] SaveBitmap(Bitmap bitmap, ImageFormat format)

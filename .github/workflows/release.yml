@@ -35,6 +35,27 @@ jobs:
           files: bin/qr2l-v*-win-x64.zip
           generate_release_notes: true
 
+  update-winget:
+    name: Update winget package
+    runs-on: windows-latest
+    needs: build-release
+    steps:
+      - name: Submit winget version update
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          if (-not $env:WINGET_TOKEN) {
+            Write-Host "WINGET_TOKEN secret not set, skipping winget update"
+            exit 0
+          }
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          .\wingetcreate.exe update StefanoCaronia.qr2l `
+            --version $version `
+            --urls "https://github.com/stefanocaronia/qr2l/releases/download/${{ github.ref_name }}/qr2l-v$version-win-x64.zip" `
+            --submit --token $env:WINGET_TOKEN
+
   deploy-pages:
     name: Deploy HTML version to GitHub Pages
     runs-on: ubuntu-latest

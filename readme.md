@@ -2,6 +2,8 @@
 
 **A minimalistic QR Code Generator Tool**
 
+🌐 **Try it online**: [stefanocaronia.github.io/qr2l](https://stefanocaronia.github.io/qr2l/)
+
 ---
 
 ## Projects

@@ -31,6 +31,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          name: qr2l v${{ github.ref_name }} (Windows x64)
           files: bin/qr2l-v*-win-x64.zip
           generate_release_notes: true
 

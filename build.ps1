@@ -1,7 +1,8 @@
 # qr2l Build Script
 param(
     [string]$Configuration = "Release",
-    [string]$Runtime = "win-x64"
+    [string]$Runtime = "win-x64",
+    [switch]$SkipInstaller
 )
 
 $ErrorActionPreference = "Stop"
@@ -84,8 +85,37 @@ if ($isWindowsTarget) {
     }
 }
 
+$outputs = @($archiveName)
+
+# Windows installer, when Inno Setup is available (the same lookup build-installer.ps1 does)
+if ($isWindowsTarget -and -not $SkipInstaller) {
+    $isccCandidates = @(
+        "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+        "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+        "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe"
+    )
+    $iscc = $isccCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+    if (-not $iscc) {
+        $iscc = (Get-Command ISCC.exe -ErrorAction SilentlyContinue).Source
+    }
+
+    if ($iscc) {
+        & (Join-Path $PSScriptRoot "packaging/windows/build-installer.ps1") -Iscc $iscc
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Installer build failed" -ForegroundColor Red
+            exit 1
+        }
+
+        $outputs += "qr2l-v$version-$Runtime-setup.exe"
+    } else {
+        Write-Host "ℹ️  Inno Setup not found, skipping the installer"
+    }
+}
+
 # Summary
 Write-Host "✅  Build complete!" -ForegroundColor Green
 Write-Host "📌 Version: $version"
-Write-Host "📁 Output: bin/$archiveName"
+Write-Host "📁 Output: $(($outputs | ForEach-Object { "bin/$_" }) -join ', ')"
 Write-Host "📦 Files: $($binaries -join ', ')"

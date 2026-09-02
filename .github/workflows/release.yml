@@ -43,20 +43,17 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Build distribution package
-        shell: pwsh
-        run: .\build.ps1
-
-      # The runner image usually ships Inno Setup, but the build must not depend on it
       - name: Ensure Inno Setup is available
         shell: pwsh
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
-
-      - name: Build installer
+      - name: Build distribution package
         shell: pwsh
-        run: packaging\windows\build-installer.ps1
+        run: .\build.ps1
+
+      # The runner image usually ships Inno Setup, but the build must not depend on it
+
 
       - name: Smoke test the installer
         shell: pwsh
@@ -93,8 +90,6 @@ jobs:
       - name: Build distribution package
         run: ./build.sh Release linux-x64
 
-      - name: Build Debian package
-        run: packaging/deb/build-deb.sh amd64
 
       - name: Smoke test the published CLI
         run: |

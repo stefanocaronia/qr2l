@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
 # qr2l Build Script for Linux and macOS hosts. On Windows use build.ps1.
 #
-# Usage: ./build.sh [Configuration] [Runtime]
+# Usage: ./build.sh [Configuration] [Runtime] [--skip-deb]
 #   Configuration  Release (default) or Debug
 #   Runtime        linux-x64 (default), linux-arm64, win-x64, ...
+#   --skip-deb     Do not build the Debian package for Linux targets
 set -euo pipefail
 
-CONFIGURATION="${1:-Release}"
-RUNTIME="${2:-linux-x64}"
+SKIP_DEB=0
+ARGS=()
+for arg in "$@"; do
+    if [ "$arg" = "--skip-deb" ]; then SKIP_DEB=1; else ARGS+=("$arg"); fi
+done
+
+CONFIGURATION="${ARGS[0]:-Release}"
+RUNTIME="${ARGS[1]:-linux-x64}"
 
 cd "$(dirname "$0")"
 
@@ -63,8 +70,28 @@ case "$RUNTIME" in
         ;;
 esac
 
+OUTPUTS=("$ARCHIVE")
+
+# Debian package, when dpkg-deb is available
+if [ "$SKIP_DEB" = "0" ]; then
+    case "$RUNTIME" in
+        linux-x64)   DEB_ARCH="amd64" ;;
+        linux-arm64) DEB_ARCH="arm64" ;;
+        *)           DEB_ARCH="" ;;
+    esac
+
+    if [ -n "$DEB_ARCH" ]; then
+        if command -v dpkg-deb >/dev/null 2>&1; then
+            packaging/deb/build-deb.sh "$DEB_ARCH"
+            OUTPUTS+=("qr2l_${VERSION}_${DEB_ARCH}.deb")
+        else
+            echo "ℹ️  dpkg-deb not found, skipping the Debian package"
+        fi
+    fi
+fi
+
 # Summary
 echo "✅  Build complete!"
 echo "📌 Version: $VERSION"
-echo "📁 Output: bin/$ARCHIVE"
+echo "📁 Output: ${OUTPUTS[*]/#/bin/}"
 echo "📦 Files: ${BINARIES[*]}"

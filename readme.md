@@ -196,26 +196,31 @@ dotnet test qr2l.Tests/qr2l.Tests.csproj
 
 ### Distribution packages
 
-The build scripts publish both executables as self-contained single files and create the release archive in `bin/`.
+A single command publishes both executables as self-contained single files and produces every package for the target
+platform in `bin/`: the archive plus the Windows installer or the Debian package.
 
 On Windows (PowerShell):
 
 ```powershell
-.\build.ps1                                # qr2l-v<version>-win-x64.zip
-.\build.ps1 -Runtime linux-x64             # qr2l-v<version>-linux-x64.tar.gz, cross-built from Windows
-packaging\windows\build-installer.ps1      # qr2l-v<version>-win-x64-setup.exe (needs Inno Setup 6)
+.\build.ps1                       # zip + installer (the installer needs Inno Setup 6)
+.\build.ps1 -SkipInstaller        # zip only
+.\build.ps1 -Runtime linux-x64    # tar.gz, cross-built from Windows
 ```
 
 On Linux:
 
 ```bash
-./build.sh                        # qr2l-v<version>-linux-x64.tar.gz
-./build.sh Release win-x64        # qr2l-v<version>-win-x64.zip, cross-built from Linux
-packaging/deb/build-deb.sh        # qr2l_<version>_amd64.deb from the binaries built above (needs dpkg-deb)
+./build.sh                                 # tar.gz + .deb (the package needs dpkg-deb)
+./build.sh Release linux-x64 --skip-deb    # tar.gz only
+./build.sh Release win-x64                 # zip, cross-built from Linux
 ```
 
-The scripts are also what the GitHub Actions workflow runs: every push builds both packages and runs the test suite
-on Linux, and pushing a version tag publishes them as a GitHub Release and updates the winget package.
+Missing optional tooling is not an error: the scripts skip the installer or the Debian package with a note and still
+produce the archive.
+
+The scripts are also what the GitHub Actions workflow runs: every push builds and smoke-tests both platforms and runs
+the test suite on Linux, and pushing a version tag publishes everything as a GitHub Release and updates the winget
+package.
 
 ### Manual publishing
 

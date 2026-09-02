@@ -12,7 +12,7 @@ public class ExportFormatExtensionsTests
     [InlineData(ExportFormat.Pdf, "pdf")]
     [InlineData(ExportFormat.Bmp, "bmp")]
     [InlineData(ExportFormat.Jpeg, "jpg")]
-    [InlineData(ExportFormat.Gif, "gif")]
+    [InlineData(ExportFormat.WebP, "webp")]
     [InlineData(ExportFormat.PostScript, "ps")]
     public void GetExtension_AllFormats_ShouldReturnCorrectExtension(ExportFormat format, string expectedExtension)
     {

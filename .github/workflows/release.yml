@@ -14,9 +14,25 @@ permissions:
   id-token: write
 
 jobs:
+  test:
+    name: Run tests on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Run tests
+        run: dotnet test qr2l.Tests/qr2l.Tests.csproj --nologo
+
   build-release:
-    name: Build and publish release
+    name: Build and publish Windows release
     if: startsWith(github.ref, 'refs/tags/')
+    needs: test
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -34,9 +50,32 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: qr2l v${{ github.ref_name }} (Windows x64)
+          name: qr2l v${{ github.ref_name }}
           files: bin/qr2l-v*-win-x64.zip
           generate_release_notes: true
+
+  build-release-linux:
+    name: Build and publish Linux release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Build distribution package
+        shell: pwsh
+        run: ./build.ps1 -Runtime linux-x64
+
+      - name: Attach to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bin/qr2l-v*-linux-x64.tar.gz
 
   update-winget:
     name: Update winget package

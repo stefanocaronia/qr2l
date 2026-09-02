@@ -11,7 +11,7 @@
 ### **qr2l.Core**
 
 Core library providing QR code generation functionality with support for multiple formats (PNG, SVG, PDF, BMP, JPEG,
-GIF, PostScript) and customization options (colors, logos, error correction levels, pixel shapes). Built on top of
+WebP, PostScript) and customization options (colors, logos, error correction levels, pixel shapes). Built on top of
 QRCoder.
 
 ### **qr2l.CLI**
@@ -32,6 +32,7 @@ multi-language interface.
 ### **qr2l.Core**
 
 - [QRCoder](https://github.com/codebude/QRCoder) 1.7.0 - QR code generation library
+- [SkiaSharp](https://github.com/mono/SkiaSharp) 3.119.4 - cross-platform 2D graphics, used for raster rendering
 
 The dependency is automatically restored when building the solution or individual projects via `dotnet build` or
 `dotnet restore`.
@@ -67,7 +68,13 @@ Use the provided PowerShell build script to create a complete distribution packa
 .\build.ps1
 ```
 
-The script extracts the version from `Directory.Build.props` and creates `bin\qr2l-v<version>-win-x64.zip`.
+The script extracts the version from `Directory.Build.props` and creates `bin/qr2l-v<version>-win-x64.zip`.
+
+For Linux, pass the runtime identifier: the output is a `tar.gz` archive with the same two binaries.
+
+```powershell
+.uild.ps1 -Runtime linux-x64
+```
 
 ### Manual Publishing
 
@@ -84,6 +91,8 @@ dotnet publish qr2l.CLI/qr2l.CLI.csproj -c Release -r win-x64 --self-contained -
 ```powershell
 dotnet publish qr2l.Avalonia/qr2l.Avalonia.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish
 ```
+
+Replace `win-x64` with `linux-x64` to build the Linux binaries.
 
 ---
 

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing;
 using System.Text;
 using qr2l.Core;
 using Xunit;
@@ -58,8 +57,8 @@ public class QrGeneratorTests
     public void Generate_WithCustomColors_ShouldSucceed()
     {
         var options = new QrCodeOptions {
-            darkColor = Color.Red,
-            lightColor = Color.Yellow,
+            darkColor = new QrColor(255, 0, 0),
+            lightColor = new QrColor(255, 255, 0),
             pixelsPerModule = 10
         };
 
@@ -124,7 +123,7 @@ public class QrGeneratorTests
     [InlineData(ExportFormat.Pdf)]
     [InlineData(ExportFormat.Bmp)]
     [InlineData(ExportFormat.Jpeg)]
-    [InlineData(ExportFormat.Gif)]
+    [InlineData(ExportFormat.WebP)]
     [InlineData(ExportFormat.PostScript)]
     public void Generate_AllFormats_ShouldSucceed(ExportFormat format)
     {

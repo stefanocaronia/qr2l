@@ -1,5 +1,4 @@
-﻿﻿using System.Drawing;
-using System.Text;
+﻿﻿using System.Text;
 using qr2l.Core;
 
 namespace Qr2l.CLI;
@@ -41,7 +40,7 @@ internal class Program
         ShowInfo("");
         ShowInfo("Usage: qr2l <text|url> <output file> [options]");
         ShowInfo("");
-        ShowInfo("Supported formats: .png, .svg, .pdf, .bmp, .jpg, .jpeg, .gif, .ps");
+        ShowInfo("Supported formats: .png, .svg, .pdf, .bmp, .jpg, .jpeg, .webp, .ps");
         ShowInfo("");
         ShowInfo("Options:");
         ShowInfo("  --error-correction=<level>    Error correction level: low, medium, high, maximum (default: medium)");
@@ -106,7 +105,7 @@ internal class Program
 
                 case "logo":
                     if (!string.IsNullOrEmpty(value) && File.Exists(value)) {
-                        options.logo = Image.FromFile(value);
+                        options.logo = File.ReadAllBytes(value);
                     } else {
                         ShowError($"⚠️  Logo file not found: {value}");
                     }
@@ -151,7 +150,7 @@ internal class Program
             ".pdf" => ExportFormat.Pdf,
             ".bmp" => ExportFormat.Bmp,
             ".jpg" or ".jpeg" => ExportFormat.Jpeg,
-            ".gif" => ExportFormat.Gif,
+            ".webp" => ExportFormat.WebP,
             ".ps" => ExportFormat.PostScript,
             var _ => throw new ArgumentException($"Unsupported file format: {ext}")
         };
@@ -168,22 +167,9 @@ internal class Program
         };
     }
 
-    private static Color ParseColor(string? hex)
+    private static QrColor ParseColor(string? hex)
     {
-        if (string.IsNullOrEmpty(hex)) {
-            return Color.Black;
-        }
-
-        hex = hex.TrimStart('#');
-
-        if (hex.Length == 6) {
-            var r = Convert.ToInt32(hex.Substring(0, 2), 16);
-            var g = Convert.ToInt32(hex.Substring(2, 2), 16);
-            var b = Convert.ToInt32(hex.Substring(4, 2), 16);
-            return Color.FromArgb(r, g, b);
-        }
-
-        return Color.Black;
+        return QrColor.TryParseHex(hex) ?? QrColor.Black;
     }
 
     private static PixelShape ParseShape(string? value)
@@ -226,7 +212,7 @@ internal class Program
     private static void ShowOptionsInfo(QrCodeOptions options)
     {
         ShowInfo($"⚙️  Error Correction: {options.errorCorrection}");
-        ShowInfo($"⚙️  Colors: #{options.darkColor.R:X2}{options.darkColor.G:X2}{options.darkColor.B:X2} / #{options.lightColor.R:X2}{options.lightColor.G:X2}{options.lightColor.B:X2}");
+        ShowInfo($"⚙️  Colors: {options.darkColor.ToHex()} / {options.lightColor.ToHex()}");
         ShowInfo($"⚙️  Shape: {options.shape}");
         ShowInfo($"⚙️  Payload Mode: {options.payloadMode}");
 

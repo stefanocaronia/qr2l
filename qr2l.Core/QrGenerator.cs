@@ -1,8 +1,7 @@
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
+using System.Collections;
 using System.Text;
 using QRCoder;
+using SkiaSharp;
 
 namespace qr2l.Core;
 
@@ -26,12 +25,12 @@ public static class QrGenerator
         QRCodeData data = generator.CreateQrCode(payload, ConvertErrorCorrectionLevel(options.errorCorrection));
 
         return format switch {
-            ExportFormat.Png => GeneratePng(data, options),
+            ExportFormat.Png => EncodeRaster(data, options, SKEncodedImageFormat.Png),
+            ExportFormat.Jpeg => EncodeRaster(data, options, SKEncodedImageFormat.Jpeg),
+            ExportFormat.WebP => EncodeRaster(data, options, SKEncodedImageFormat.Webp),
+            ExportFormat.Bmp => GenerateBmp(data, options),
             ExportFormat.Svg => GenerateSvgBytes(data, options),
             ExportFormat.Pdf => GeneratePdf(data, options),
-            ExportFormat.Bmp => GenerateBmp(data, options),
-            ExportFormat.Jpeg => GenerateJpeg(data, options),
-            ExportFormat.Gif => GenerateGif(data, options),
             ExportFormat.PostScript => GeneratePostScript(data, options),
             var _ => throw new ArgumentException($"Unsupported format: {format}")
         };
@@ -55,13 +54,10 @@ public static class QrGenerator
         QRCodeData data = generator.CreateQrCode(payload, ConvertErrorCorrectionLevel(options.errorCorrection));
 
         var svgQr = new SvgQRCode(data);
-        Color darkColor = options.darkColor;
-        Color lightColor = options.lightColor;
-
         return svgQr.GetGraphic(
             pixelsPerModule: 20,
-            darkColorHex: $"#{darkColor.R:X2}{darkColor.G:X2}{darkColor.B:X2}",
-            lightColorHex: $"#{lightColor.R:X2}{lightColor.G:X2}{lightColor.B:X2}",
+            darkColorHex: options.darkColor.ToHex(),
+            lightColorHex: options.lightColor.ToHex(),
             drawQuietZones: true
         );
     }
@@ -349,114 +345,118 @@ public static class QrGenerator
         };
     }
 
-    private static byte[] GeneratePng(QRCodeData data, QrCodeOptions options)
+    private const int EncodeQuality = 90;
+    private const float CirclePixelFactor = 0.8f;
+    private const float LogoWidthRatio = 0.24f;
+    private const float LogoPaddingRatio = 0.07f;
+
+    private static byte[] EncodeRaster(QRCodeData data, QrCodeOptions options, SKEncodedImageFormat format)
     {
-        return SaveBitmap(RenderBitmap(data, options), ImageFormat.Png);
+        using SKBitmap bitmap = RenderBitmap(data, options);
+        using SKImage image = SKImage.FromBitmap(bitmap);
+        using SKData encoded = image.Encode(format, EncodeQuality);
+        return encoded.ToArray();
     }
 
     private static byte[] GenerateBmp(QRCodeData data, QrCodeOptions options)
     {
-        return SaveBitmap(RenderBitmap(data, options), ImageFormat.Bmp);
-    }
-
-    private static byte[] GenerateJpeg(QRCodeData data, QrCodeOptions options)
-    {
-        return SaveBitmap(RenderBitmap(data, options), ImageFormat.Jpeg);
-    }
-
-    private static byte[] GenerateGif(QRCodeData data, QrCodeOptions options)
-    {
-        return SaveBitmap(RenderBitmap(data, options), ImageFormat.Gif);
+        using SKBitmap bitmap = RenderBitmap(data, options);
+        return BmpEncoder.Encode(bitmap);
     }
 
     /// <summary>
-    /// Disegna il codice in tutti i formati raster, logo compreso.
+    /// Disegna i moduli del codice dalla matrice di QRCoder (quiet zone compresa) e il logo, se presente.
     /// </summary>
-    private static Bitmap RenderBitmap(QRCodeData data, QrCodeOptions options)
+    private static SKBitmap RenderBitmap(QRCodeData data, QrCodeOptions options)
     {
-        Bitmap bitmap;
+        List<BitArray> matrix = data.ModuleMatrix;
+        int modules = matrix.Count;
+        float module = options.pixelsPerModule;
+        int size = modules * options.pixelsPerModule;
 
-        if (options.shape == PixelShape.Circle) {
-            using var artQr = new ArtQRCode(data);
-            bitmap = artQr.GetGraphic(
-                pixelsPerModule: options.pixelsPerModule,
-                darkColor: options.darkColor,
-                lightColor: options.lightColor,
-                backgroundColor: options.lightColor,
-                pixelSizeFactor: 0.8f,
-                drawQuietZones: true
-            );
-        } else {
-            using var qr = new QRCode(data);
-            bitmap = qr.GetGraphic(
-                pixelsPerModule: options.pixelsPerModule,
-                darkColor: options.darkColor,
-                lightColor: options.lightColor,
-                drawQuietZones: true
-            );
+        var bitmap = new SKBitmap(new SKImageInfo(size, size, SKColorType.Bgra8888, SKAlphaType.Premul));
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(ToSkColor(options.lightColor));
+
+        bool circles = options.shape == PixelShape.Circle;
+        float radius = module * CirclePixelFactor / 2f;
+        using var paint = new SKPaint { Color = ToSkColor(options.darkColor), IsAntialias = circles };
+
+        for (var y = 0; y < modules; y++) {
+            for (var x = 0; x < modules; x++) {
+                if (!matrix[y][x]) {
+                    continue;
+                }
+
+                if (circles && !IsFinderPattern(x, y, modules)) {
+                    canvas.DrawCircle((x + 0.5f) * module, (y + 0.5f) * module, radius, paint);
+                } else {
+                    canvas.DrawRect(x * module, y * module, module, module, paint);
+                }
+            }
         }
 
         if (options.logo != null) {
-            DrawLogo(bitmap, options.logo, options.lightColor);
+            DrawLogo(canvas, size, options.logo, options.lightColor);
         }
 
+        canvas.Flush();
         return bitmap;
     }
 
     /// <summary>
-    /// Disegna il logo al centro su uno sfondo arrotondato che libera i moduli sottostanti:
-    /// senza di esso il logo risulterebbe semplicemente sovrapposto al disegno del codice.
+    /// I tre finder pattern restano quadrati anche con i pixel tondi: i lettori li cercano
+    /// come sequenze di moduli pieni e con i cerchi faticano a riconoscerli.
     /// </summary>
-    private static void DrawLogo(Bitmap bitmap, Image logo, Color backgroundColor)
+    private static bool IsFinderPattern(int x, int y, int modules)
     {
-        // Porzione del lato occupata dal logo e margine attorno, in frazione del logo stesso
-        const float logoWidthRatio = 0.24f;
-        const float paddingRatio = 0.07f;
+        const int quietZone = 4;
+        const int finderSize = 7;
+        int last = modules - quietZone - finderSize;
 
-        float logoWidth = bitmap.Width * logoWidthRatio;
-        float logoHeight = logoWidth * logo.Height / logo.Width;
+        bool InFirst(int v) => v >= quietZone && v < quietZone + finderSize;
+        bool InLast(int v) => v >= last && v < last + finderSize;
 
-        float x = (bitmap.Width - logoWidth) / 2f;
-        float y = (bitmap.Height - logoHeight) / 2f;
-
-        float padding = logoWidth * paddingRatio;
-        var background = new RectangleF(
-            x - padding,
-            y - padding,
-            logoWidth + (padding * 2f),
-            logoHeight + (padding * 2f));
-
-        using var graphics = Graphics.FromImage(bitmap);
-        graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-        graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-        using (var brush = new SolidBrush(backgroundColor)) {
-            graphics.FillRectangle(brush, background);
-        }
-
-        graphics.DrawImage(logo, new RectangleF(x, y, logoWidth, logoHeight));
+        return (InFirst(x) && InFirst(y)) || (InLast(x) && InFirst(y)) || (InFirst(x) && InLast(y));
     }
 
-    private static byte[] SaveBitmap(Bitmap bitmap, ImageFormat format)
+    /// <summary>
+    /// Disegna il logo al centro su uno sfondo che libera i moduli sottostanti:
+    /// senza di esso il logo risulterebbe semplicemente sovrapposto al disegno del codice.
+    /// </summary>
+    private static void DrawLogo(SKCanvas canvas, int size, byte[] logoBytes, QrColor background)
     {
-        using (bitmap) {
-            using var stream = new MemoryStream();
-            bitmap.Save(stream, format);
-            return stream.ToArray();
-        }
+        using SKBitmap logo = SKBitmap.Decode(logoBytes)
+            ?? throw new ArgumentException("The logo is not a valid image.");
+
+        float logoWidth = size * LogoWidthRatio;
+        float logoHeight = logoWidth * logo.Height / logo.Width;
+        float x = (size - logoWidth) / 2f;
+        float y = (size - logoHeight) / 2f;
+        float padding = logoWidth * LogoPaddingRatio;
+
+        using var backgroundPaint = new SKPaint { Color = ToSkColor(background) };
+        canvas.DrawRect(
+            SKRect.Create(x - padding, y - padding, logoWidth + (padding * 2f), logoHeight + (padding * 2f)),
+            backgroundPaint);
+
+        using SKImage image = SKImage.FromBitmap(logo);
+        var sampling = new SKSamplingOptions(SKCubicResampler.Mitchell);
+        canvas.DrawImage(image, SKRect.Create(x, y, logoWidth, logoHeight), sampling);
+    }
+
+    private static SKColor ToSkColor(QrColor color)
+    {
+        return new SKColor(color.R, color.G, color.B);
     }
 
     private static byte[] GenerateSvgBytes(QRCodeData data, QrCodeOptions options)
     {
         var svgQr = new SvgQRCode(data);
-        Color darkColor = options.darkColor;
-        Color lightColor = options.lightColor;
-
         string svg = svgQr.GetGraphic(
             pixelsPerModule: 20,
-            darkColorHex: $"#{darkColor.R:X2}{darkColor.G:X2}{darkColor.B:X2}",
-            lightColorHex: $"#{lightColor.R:X2}{lightColor.G:X2}{lightColor.B:X2}",
+            darkColorHex: options.darkColor.ToHex(),
+            lightColorHex: options.lightColor.ToHex(),
             drawQuietZones: true
         );
 

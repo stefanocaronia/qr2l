@@ -12,9 +12,6 @@ using Material.Icons;
 using qr2l.Core;
 using AvaloniaBitmap = Avalonia.Media.Imaging.Bitmap;
 using AvaloniaColor = Avalonia.Media.Color;
-using DrawingBitmap = System.Drawing.Bitmap;
-using DrawingColor = System.Drawing.Color;
-using DrawingImage = System.Drawing.Image;
 
 namespace qr2l.Avalonia;
 
@@ -33,7 +30,7 @@ public partial class MainWindow : Window
     private readonly Flyout bgColorFlyout;
     private byte[]? pngData;
     private string? svgData;
-    private DrawingImage? logo;
+    private byte[]? logo;
     private bool suppressLanguageEvent;
 
     #endregion
@@ -143,16 +140,16 @@ public partial class MainWindow : Window
     private QrCodeOptions CreateOptions()
     {
         return new QrCodeOptions {
-            darkColor = ToDrawingColor(fgColorView.Color),
-            lightColor = ToDrawingColor(bgColorView.Color),
+            darkColor = ToQrColor(fgColorView.Color),
+            lightColor = ToQrColor(bgColorView.Color),
             logo = logo,
             pixelsPerModule = 20
         };
     }
 
-    private static DrawingColor ToDrawingColor(AvaloniaColor color)
+    private static QrColor ToQrColor(AvaloniaColor color)
     {
-        return DrawingColor.FromArgb(color.A, color.R, color.G, color.B);
+        return new QrColor(color.R, color.G, color.B);
     }
 
     private void ClearImageData()
@@ -252,7 +249,6 @@ public partial class MainWindow : Window
     private async void OnLogoClick(object? sender, RoutedEventArgs e)
     {
         if (logo != null) {
-            logo.Dispose();
             logo = null;
         } else {
             IReadOnlyList<IStorageFile> files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions {
@@ -267,10 +263,13 @@ public partial class MainWindow : Window
 
             try {
                 await using Stream stream = await files[0].OpenReadAsync();
+                using var buffer = new MemoryStream();
+                await stream.CopyToAsync(buffer);
+                byte[] bytes = buffer.ToArray();
 
-                // GDI+ richiede lo stream aperto per tutta la vita dell'immagine: se ne fa una copia indipendente
-                using var loaded = new DrawingBitmap(stream);
-                logo = new DrawingBitmap(loaded);
+                // Verifica subito che il file sia un'immagine decodificabile, prima di adottarlo come logo
+                QrGenerator.Generate("qr2l", ExportFormat.Png, new QrCodeOptions { logo = bytes });
+                logo = bytes;
             } catch (Exception ex) {
                 await ShowMessageAsync(Localization.T("err_title"), ex.Message);
                 return;

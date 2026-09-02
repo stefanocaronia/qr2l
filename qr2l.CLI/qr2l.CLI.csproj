@@ -6,6 +6,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <PublishSingleFile>true</PublishSingleFile>
+        <!-- Le librerie native (Skia) vanno dentro l'unico eseguibile -->
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
         <PublishTrimmed>false</PublishTrimmed>
         <SelfContained>true</SelfContained>
         <AssemblyName>qr2l</AssemblyName>

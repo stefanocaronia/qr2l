@@ -1,4 +1,4 @@
-﻿# qr2l Build Script
+# qr2l Build Script
 param(
     [string]$Configuration = "Release",
     [string]$Runtime = "win-x64"
@@ -15,7 +15,12 @@ if (-not $version) {
     exit 1
 }
 
-Write-Host "🚀 Building qr2l v$version" -ForegroundColor Cyan
+# Windows binaries carry the .exe suffix and ship as zip; other targets ship as tar.gz
+$isWindowsTarget = $Runtime.StartsWith("win")
+$exeSuffix = if ($isWindowsTarget) { ".exe" } else { "" }
+$binaries = @("qr2l$exeSuffix", "qr2l-gui$exeSuffix")
+
+Write-Host "🚀 Building qr2l v$version for $Runtime" -ForegroundColor Cyan
 
 # Clean previous build directory
 Write-Host "🧹 Cleaning bin directory"
@@ -26,7 +31,7 @@ New-Item -ItemType Directory -Path "bin" | Out-Null
 
 # Publish CLI
 Write-Host "📦 Publishing CLI application"
-$null = dotnet publish qr2l.CLI\qr2l.CLI.csproj -c $Configuration -r $Runtime --self-contained -p:PublishSingleFile=true -o bin --verbosity quiet --nologo 2>&1
+$null = dotnet publish qr2l.CLI/qr2l.CLI.csproj -c $Configuration -r $Runtime --self-contained -p:PublishSingleFile=true -o bin --verbosity quiet --nologo 2>&1
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ CLI publish failed" -ForegroundColor Red
@@ -35,7 +40,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # Publish GUI
 Write-Host "📦 Publishing GUI application"
-$null = dotnet publish qr2l.Avalonia\qr2l.Avalonia.csproj -c $Configuration -r $Runtime --self-contained -p:PublishSingleFile=true -o bin --verbosity quiet --nologo 2>&1
+$null = dotnet publish qr2l.Avalonia/qr2l.Avalonia.csproj -c $Configuration -r $Runtime --self-contained -p:PublishSingleFile=true -o bin --verbosity quiet --nologo 2>&1
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ GUI publish failed" -ForegroundColor Red
@@ -44,21 +49,27 @@ if ($LASTEXITCODE -ne 0) {
 
 # Cleanup
 Write-Host "🧹 Cleaning up PDB files"
-Get-ChildItem "bin\*.pdb" -ErrorAction SilentlyContinue | Remove-Item -Force
+Get-ChildItem "bin/*.pdb" -ErrorAction SilentlyContinue | Remove-Item -Force
 
-# Create zip
-$zipName = "qr2l-v$version-$Runtime.zip"
-$zipPath = "bin\$zipName"
+# Create archive
+if ($isWindowsTarget) {
+    $archiveName = "qr2l-v$version-$Runtime.zip"
+    Write-Host "📦 Creating ZIP archive"
+    $paths = $binaries | ForEach-Object { "bin/$_" }
+    Compress-Archive -Path $paths -DestinationPath "bin/$archiveName" -CompressionLevel Optimal -Force
+} else {
+    $archiveName = "qr2l-v$version-$Runtime.tar.gz"
+    Write-Host "📦 Creating TAR.GZ archive"
+    tar -czf "bin/$archiveName" -C bin @binaries
 
-Write-Host "📦 Creating ZIP archive"
-if (Test-Path $zipPath) {
-    Remove-Item $zipPath -Force
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "❌ Archive creation failed" -ForegroundColor Red
+        exit 1
+    }
 }
-Compress-Archive -Path "bin\qr2l.exe", "bin\qr2l-gui.exe" -DestinationPath $zipPath -CompressionLevel Optimal -Force
 
 # Summary
 Write-Host "✅  Build complete!" -ForegroundColor Green
 Write-Host "📌 Version: $version"
-Write-Host "📁 Output: $zipPath"
-Write-Host "📦 Files: qr2l.exe, qr2l-gui.exe"
-
+Write-Host "📁 Output: bin/$archiveName"
+Write-Host "📦 Files: $($binaries -join ', ')"

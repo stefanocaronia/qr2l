@@ -1,2 +1,3 @@
-# Shell scripts must keep LF line endings: bash rejects CRLF
+# Shell scripts and Debian packaging files must keep LF line endings
 *.sh text eol=lf
+packaging/deb/** text eol=lf

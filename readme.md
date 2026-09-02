@@ -19,7 +19,7 @@ QRCoder.
 Command-line interface for generating QR codes from the terminal. Supports all core features with an easy-to-use syntax
 for quick QR code generation.
 
-### **qr2l.Avalonia**
+### **qr2l.GUI**
 
 Cross-platform desktop application (Avalonia UI) with a graphical interface for creating and exporting QR codes.
 Features real-time preview, color customization, logo embedding, clipboard support, light/dark theme and a
@@ -89,7 +89,7 @@ dotnet publish qr2l.CLI/qr2l.CLI.csproj -c Release -r win-x64 --self-contained -
 #### GUI Application
 
 ```powershell
-dotnet publish qr2l.Avalonia/qr2l.Avalonia.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish
+dotnet publish qr2l.GUI/qr2l.GUI.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish
 ```
 
 Replace `win-x64` with `linux-x64` to build the Linux binaries.

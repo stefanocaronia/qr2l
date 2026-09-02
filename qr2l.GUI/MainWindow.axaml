@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mi="using:Material.Icons.Avalonia"
-        x:Class="qr2l.Avalonia.MainWindow"
+        x:Class="qr2l.GUI.MainWindow"
         Title="qr2l"
         Icon="/Assets/app.ico"
         Width="400" Height="640"

@@ -4,7 +4,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
 using qr2l.Core;
 
-namespace qr2l.Avalonia;
+namespace qr2l.GUI;
 
 public partial class App : Application
 {

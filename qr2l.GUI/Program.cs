@@ -1,6 +1,6 @@
 using Avalonia;
 
-namespace qr2l.Avalonia;
+namespace qr2l.GUI;
 
 internal static class Program
 {

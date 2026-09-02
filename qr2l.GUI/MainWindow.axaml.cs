@@ -13,7 +13,7 @@ using qr2l.Core;
 using AvaloniaBitmap = Avalonia.Media.Imaging.Bitmap;
 using AvaloniaColor = Avalonia.Media.Color;
 
-namespace qr2l.Avalonia;
+namespace qr2l.GUI;
 
 public partial class MainWindow : Window
 {

@@ -75,7 +75,7 @@ These libraries are already present on any regular desktop installation.
 
 Run `qr2l-gui`: type or paste the content, pick the colors, optionally add a logo, and the preview updates as you type.
 Save in any supported format or copy the image to the clipboard. The interface follows your system language and
-offers a light and a dark theme.
+theme, and lets you switch between light and dark at any time.
 
 ### Command line
 

@@ -10,7 +10,27 @@ public partial class App : Application
 {
     private const string ThemeSettingsKey = "theme";
 
-    public static bool IsDark => Current?.RequestedThemeVariant == ThemeVariant.Dark;
+    /// <summary>
+    /// Vero se l'interfaccia è scura: una scelta esplicita dell'utente ha la precedenza,
+    /// altrimenti conta il tema effettivo, che con "Default" è quello del sistema.
+    /// </summary>
+    public static bool IsDark
+    {
+        get
+        {
+            ThemeVariant? requested = Current?.RequestedThemeVariant;
+
+            if (requested == ThemeVariant.Dark) {
+                return true;
+            }
+
+            if (requested == ThemeVariant.Light) {
+                return false;
+            }
+
+            return Current?.ActualThemeVariant == ThemeVariant.Dark;
+        }
+    }
 
     public override void Initialize()
     {
@@ -21,8 +41,12 @@ public partial class App : Application
     {
         Localization.Initialize();
 
-        // Tema chiaro di default; la scelta manuale viene ricordata tra le sessioni
-        RequestedThemeVariant = UserSettings.Get(ThemeSettingsKey) == "dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+        // Si segue il tema di sistema finché l'utente non ne sceglie uno: da lì vale la scelta salvata
+        RequestedThemeVariant = UserSettings.Get(ThemeSettingsKey) switch {
+            "dark" => ThemeVariant.Dark,
+            "light" => ThemeVariant.Light,
+            var _ => ThemeVariant.Default
+        };
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
             desktop.MainWindow = new MainWindow();

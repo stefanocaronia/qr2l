@@ -47,6 +47,13 @@ jobs:
         shell: pwsh
         run: .\build.ps1
 
+      # The runner image usually ships Inno Setup, but the build must not depend on it
+      - name: Ensure Inno Setup is available
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+
       - name: Build installer
         shell: pwsh
         run: packaging\windows\build-installer.ps1

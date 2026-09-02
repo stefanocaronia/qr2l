@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace qr2l.GUI;
+namespace qr2l.Core;
 
 /// <summary>
 ///     Localizzazione della GUI: dizionario incorporato, rilevamento automatico dalla lingua di Windows
@@ -41,6 +41,7 @@ public static class Localization
             ["tip_text"] = "Insert here the text for the QR Code",
             ["tip_picture"] = "Right click the image for options",
             ["placeholder"] = "Insert here the text for the QR Code",
+            ["waiting"] = "Waiting for input...",
             ["logo_set"] = "Set the logo",
             ["logo_remove"] = "Remove the logo",
             ["menu_save_as"] = "Save As",
@@ -90,6 +91,7 @@ public static class Localization
             ["tip_text"] = "Inserisci qui il testo per il QR Code",
             ["tip_picture"] = "Clicca con il tasto destro sull'immagine per le opzioni",
             ["placeholder"] = "Inserisci qui il testo per il QR Code",
+            ["waiting"] = "In attesa di input...",
             ["logo_set"] = "Inserisci il logo",
             ["logo_remove"] = "Rimuovi il logo",
             ["menu_save_as"] = "Salva con nome",
@@ -139,6 +141,7 @@ public static class Localization
             ["tip_text"] = "Introduce aquí el texto para el código QR",
             ["tip_picture"] = "Haz clic derecho en la imagen para ver las opciones",
             ["placeholder"] = "Introduce aquí el texto para el código QR",
+            ["waiting"] = "Esperando entrada...",
             ["logo_set"] = "Añadir el logo",
             ["logo_remove"] = "Quitar el logo",
             ["menu_save_as"] = "Guardar como",
@@ -188,6 +191,7 @@ public static class Localization
             ["tip_text"] = "Saisissez ici le texte du QR Code",
             ["tip_picture"] = "Clic droit sur l'image pour les options",
             ["placeholder"] = "Saisissez ici le texte du QR Code",
+            ["waiting"] = "En attente de saisie...",
             ["logo_set"] = "Ajouter un logo",
             ["logo_remove"] = "Retirer le logo",
             ["menu_save_as"] = "Enregistrer sous",
@@ -237,6 +241,7 @@ public static class Localization
             ["tip_text"] = "Hier den Text für den QR-Code eingeben",
             ["tip_picture"] = "Rechtsklick auf das Bild für Optionen",
             ["placeholder"] = "Hier den Text für den QR-Code eingeben",
+            ["waiting"] = "Warte auf Eingabe...",
             ["logo_set"] = "Logo hinzufügen",
             ["logo_remove"] = "Logo entfernen",
             ["menu_save_as"] = "Speichern unter",
@@ -286,6 +291,7 @@ public static class Localization
             ["tip_text"] = "Introduza aqui o texto para o código QR",
             ["tip_picture"] = "Clique com o botão direito na imagem para ver as opções",
             ["placeholder"] = "Introduza aqui o texto para o código QR",
+            ["waiting"] = "À espera de entrada...",
             ["logo_set"] = "Adicionar o logótipo",
             ["logo_remove"] = "Remover o logótipo",
             ["menu_save_as"] = "Guardar como",
@@ -335,6 +341,7 @@ public static class Localization
             ["tip_text"] = "Введите здесь текст для QR-кода",
             ["tip_picture"] = "Щёлкните правой кнопкой по изображению для параметров",
             ["placeholder"] = "Введите здесь текст для QR-кода",
+            ["waiting"] = "Ожидание ввода...",
             ["logo_set"] = "Добавить логотип",
             ["logo_remove"] = "Убрать логотип",
             ["menu_save_as"] = "Сохранить как",
@@ -384,6 +391,7 @@ public static class Localization
             ["tip_text"] = "在此输入二维码内容",
             ["tip_picture"] = "右键点击图片查看选项",
             ["placeholder"] = "在此输入二维码内容",
+            ["waiting"] = "等待输入...",
             ["logo_set"] = "添加标志",
             ["logo_remove"] = "移除标志",
             ["menu_save_as"] = "另存为",
@@ -433,6 +441,7 @@ public static class Localization
             ["tip_text"] = "QRコードにするテキストをここに入力",
             ["tip_picture"] = "画像を右クリックするとオプションが表示されます",
             ["placeholder"] = "QRコードにするテキストをここに入力",
+            ["waiting"] = "入力待ちです...",
             ["logo_set"] = "ロゴを追加",
             ["logo_remove"] = "ロゴを削除",
             ["menu_save_as"] = "名前を付けて保存",
@@ -482,6 +491,7 @@ public static class Localization
             ["tip_text"] = "QR 코드에 넣을 텍스트를 여기에 입력",
             ["tip_picture"] = "이미지를 오른쪽 클릭하면 옵션이 표시됩니다",
             ["placeholder"] = "QR 코드에 넣을 텍스트를 여기에 입력",
+            ["waiting"] = "입력을 기다리는 중...",
             ["logo_set"] = "로고 추가",
             ["logo_remove"] = "로고 제거",
             ["menu_save_as"] = "다른 이름으로 저장",

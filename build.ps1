@@ -35,7 +35,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # Publish GUI
 Write-Host "📦 Publishing GUI application"
-$null = dotnet publish qr2l.GUI\qr2l.GUI.csproj -c $Configuration -r $Runtime --self-contained -p:PublishSingleFile=true -o bin --verbosity quiet --nologo 2>&1
+$null = dotnet publish qr2l.Avalonia\qr2l.Avalonia.csproj -c $Configuration -r $Runtime --self-contained -p:PublishSingleFile=true -o bin --verbosity quiet --nologo 2>&1
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ GUI publish failed" -ForegroundColor Red

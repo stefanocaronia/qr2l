@@ -1,4 +1,4 @@
-namespace qr2l.GUI;
+namespace qr2l.Core;
 
 /// <summary>
 /// Preferenze utente persistenti (lingua, tema) salvate in un semplice file chiave=valore

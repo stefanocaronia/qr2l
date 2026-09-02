@@ -1,6 +1,6 @@
 <Solution>
+  <Project Path="qr2l.Avalonia/qr2l.Avalonia.csproj" />
   <Project Path="qr2l.CLI/qr2l.CLI.csproj" />
   <Project Path="qr2l.Core/qr2l.Core.csproj" />
-  <Project Path="qr2l.GUI/qr2l.GUI.csproj" />
   <Project Path="qr2l.Tests/qr2l.Tests.csproj" />
 </Solution>

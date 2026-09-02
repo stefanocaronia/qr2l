@@ -1,0 +1,123 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mi="using:Material.Icons.Avalonia"
+        x:Class="qr2l.Avalonia.MainWindow"
+        Title="qr2l"
+        Icon="/Assets/app.ico"
+        Width="400" Height="640"
+        CanResize="False">
+
+    <Window.Styles>
+        <!-- Pulsanti della toolbar: solo icona, senza sfondo -->
+        <Style Selector="Button.tool">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.tool mi|MaterialIcon">
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+        </Style>
+        <!-- Pulsanti colore: il contenuto (il campione) riempie tutto il pulsante -->
+        <Style Selector="Button.swatch">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="2" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style Selector="Border.bar">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" />
+            <Setter Property="Padding" Value="6,4" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel x:Name="root">
+
+        <!-- Toolbar -->
+        <Border DockPanel.Dock="Top" Classes="bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button x:Name="saveButton" Classes="tool" Click="OnSaveClick">
+                        <mi:MaterialIcon Kind="ContentSave" Foreground="#2F6FD6" />
+                    </Button>
+                    <Button x:Name="copyImageButton" Classes="tool" Click="OnCopyImageClick">
+                        <mi:MaterialIcon Kind="ContentCopy" Foreground="#B0851E" />
+                    </Button>
+                    <Button x:Name="copySvgButton" Classes="tool" Click="OnCopySvgClick">
+                        <mi:MaterialIcon Kind="Svg" Foreground="#2E9E5B" />
+                    </Button>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2">
+                    <ComboBox x:Name="languageSelector" MinWidth="100" MinHeight="0" Height="26" Padding="8,0"
+                              FontSize="12" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                              SelectionChanged="OnLanguageChanged" />
+                    <Button x:Name="themeButton" Classes="tool" Click="OnThemeClick">
+                        <mi:MaterialIcon x:Name="themeIcon" Kind="WeatherNight" Foreground="#6C7AE0" />
+                    </Button>
+                    <Button x:Name="donateButton" Classes="tool" Click="OnDonateClick">
+                        <mi:MaterialIcon Kind="Heart" Foreground="#E0453A" />
+                    </Button>
+                    <Button x:Name="helpButton" Classes="tool">
+                        <mi:MaterialIcon Kind="HelpCircle" Foreground="#2F6FD6" />
+                        <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedRight">
+                                <ScrollViewer MaxWidth="380" MaxHeight="420">
+                                    <TextBlock x:Name="helpText" TextWrapping="Wrap" />
+                                </ScrollViewer>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Barra di stato -->
+        <Border DockPanel.Dock="Bottom" Classes="bar">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock x:Name="detectedMode" Text="Text" VerticalAlignment="Center" FontWeight="SemiBold" />
+                <Button Grid.Column="1" x:Name="repoButton" Classes="tool" Click="OnRepoClick">
+                    <mi:MaterialIcon Kind="Github" />
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Opzioni: colori e logo -->
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,*,2*" ColumnSpacing="6" Margin="6,6,6,0">
+            <!-- I selettori colore si aprono a lato della finestra (vedi code-behind) per non coprire l'anteprima -->
+            <Button x:Name="fgColorButton" Classes="swatch" Click="OnFgColorClick">
+                <Border x:Name="fgSwatch" Background="Black" CornerRadius="3" />
+            </Button>
+            <Button Grid.Column="1" x:Name="bgColorButton" Classes="swatch" Click="OnBgColorClick">
+                <Border x:Name="bgSwatch" Background="White" CornerRadius="3" />
+            </Button>
+            <Button Grid.Column="2" x:Name="logoButton" Height="32" HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center" Click="OnLogoClick">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <mi:MaterialIcon x:Name="logoIcon" Kind="Image" Width="18" Height="18" />
+                    <TextBlock x:Name="logoLabel" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Testo da codificare -->
+        <TextBox DockPanel.Dock="Top" x:Name="qrText" Height="96" Margin="6,6,6,0"
+                 AcceptsReturn="True" TextWrapping="Wrap"
+                 FontFamily="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace"
+                 TextChanged="OnTextChanged" />
+
+        <!-- Anteprima: lo sfondo prende il colore chiaro del QR, così non c'è cornice attorno al codice -->
+        <Border x:Name="previewHost" Margin="6" CornerRadius="4" Background="Transparent">
+            <Panel>
+                <TextBlock x:Name="previewPlaceholder" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontStyle="Italic" Opacity="0.6" />
+                <Image x:Name="preview" Stretch="Uniform" />
+            </Panel>
+        </Border>
+
+    </DockPanel>
+</Window>

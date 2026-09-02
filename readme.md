@@ -1,112 +1,101 @@
-﻿# qr2l
+# qr2l
 
 **A minimalistic QR Code Generator Tool**
+
+Generate QR codes from the command line or from a desktop app, on Windows and Linux. Export to PNG, SVG, PDF, BMP,
+JPEG, WebP and PostScript, pick your colors, embed a logo, and let the tool detect what you are encoding: URLs, email,
+phone numbers, SMS, WhatsApp, WiFi credentials, geolocation, contacts and calendar events.
 
 🌐 **Try it online**: [stefanocaronia.github.io/qr2l](https://stefanocaronia.github.io/qr2l/)
 
 ---
 
-## Projects
+## Installation
 
-### **qr2l.Core**
+Every release ships two self-contained executables, with no runtime to install:
 
-Core library providing QR code generation functionality with support for multiple formats (PNG, SVG, PDF, BMP, JPEG,
-WebP, PostScript) and customization options (colors, logos, error correction levels, pixel shapes). Built on top of
-QRCoder.
+| File       | What it is                                            |
+|------------|-------------------------------------------------------|
+| `qr2l`     | Command-line tool                                     |
+| `qr2l-gui` | Desktop application (light/dark theme, 10 languages)  |
 
-### **qr2l.CLI**
+### Windows
 
-Command-line interface for generating QR codes from the terminal. Supports all core features with an easy-to-use syntax
-for quick QR code generation.
+With [winget](https://learn.microsoft.com/windows/package-manager/):
 
-### **qr2l.GUI**
+```powershell
+winget install StefanoCaronia.qr2l
+```
 
-Cross-platform desktop application (Avalonia UI) with a graphical interface for creating and exporting QR codes.
-Features real-time preview, color customization, logo embedding, clipboard support, light/dark theme and a
-multi-language interface.
+Or download `qr2l-v<version>-win-x64.zip` from the [Releases page](https://github.com/stefanocaronia/qr2l/releases),
+extract it anywhere and run `qr2l.exe` or `qr2l-gui.exe`.
+
+### Linux
+
+Download `qr2l-v<version>-linux-x64.tar.gz` from the [Releases page](https://github.com/stefanocaronia/qr2l/releases):
+
+```bash
+tar -xzf qr2l-v<version>-linux-x64.tar.gz
+./qr2l "Hello World" hello.png
+./qr2l-gui
+```
+
+To make the tools available system-wide, move them to a directory in your `PATH`, for example:
+
+```bash
+sudo install -m 755 qr2l qr2l-gui /usr/local/bin/
+```
+
+**Requirements**: a 64-bit glibc-based distribution. The CLI needs `fontconfig`; the desktop app additionally needs
+an X11 or Wayland session with the usual X libraries. On Debian/Ubuntu:
+
+```bash
+sudo apt install libfontconfig1 libx11-6 libice6 libsm6
+```
+
+These libraries are already present on any regular desktop installation.
 
 ---
 
-## Dependencies
+## Usage
 
-### **qr2l.Core**
+### Desktop application
 
-- [QRCoder](https://github.com/codebude/QRCoder) 1.7.0 - QR code generation library
-- [SkiaSharp](https://github.com/mono/SkiaSharp) 3.119.4 - cross-platform 2D graphics, used for raster rendering
+Run `qr2l-gui`: type or paste the content, pick the colors, optionally add a logo, and the preview updates as you type.
+Save in any supported format or copy the image to the clipboard. The interface follows your system language and
+offers a light and a dark theme.
 
-The dependency is automatically restored when building the solution or individual projects via `dotnet build` or
-`dotnet restore`.
+### Command line
 
----
-
-## Build Instructions
-
-### Prerequisites
-
-- .NET 9.0 SDK or later
-
-### Build All Projects
-
-```powershell
-dotnet build qr2l.slnx
-dotnet build qr2l.slnx -c Release
+```
+qr2l <text|url> <output file> [options]
 ```
 
----
+The output format is chosen from the file extension: `.png`, `.svg`, `.pdf`, `.bmp`, `.jpg`, `.jpeg`, `.webp`, `.ps`.
 
-## Publishing
+| Option                        | Description                                                            |
+|-------------------------------|------------------------------------------------------------------------|
+| `--error-correction=<level>`  | `low`, `medium`, `high`, `maximum` (default: `medium`)                 |
+| `--dark-color=<hex>`          | Pixel color, e.g. `1F3A93` (default: `000000`)                         |
+| `--light-color=<hex>`         | Background color (default: `FFFFFF`)                                   |
+| `--logo=<path>`               | Image to embed in the center (error correction is raised to maximum)   |
+| `--pixels-per-module=<n>`     | Size of each module in pixels (default: `20`)                          |
+| `--shape=<shape>`             | `square` or `circle` (default: `square`)                               |
+| `--payload-mode=<mode>`       | Force a content type instead of auto-detecting it                      |
+| `--wifi-auth=<type>`          | `wpa`, `wep`, `nopass` for WiFi payloads (default: `wpa`)              |
+| `--wifi-hidden`               | Mark the WiFi network as hidden                                        |
 
-### Version Management
+Examples:
 
-The application version is centrally defined in `Directory.Build.props` and automatically inherited by all projects. To update the version, edit the `<Version>` property in this file.
-
-### Automated Build (Recommended)
-
-Use the provided PowerShell build script to create a complete distribution package:
-
-```powershell
-.\build.ps1
-```
-
-The script extracts the version from `Directory.Build.props` and creates `bin/qr2l-v<version>-win-x64.zip`.
-
-For Linux, pass the runtime identifier: the output is a `tar.gz` archive with the same two binaries.
-
-```powershell
-.uild.ps1 -Runtime linux-x64
-```
-
-### Manual Publishing
-
-Create self-contained, single-file executables for distribution:
-
-#### CLI Application
-
-```powershell
-dotnet publish qr2l.CLI/qr2l.CLI.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish
-```
-
-#### GUI Application
-
-```powershell
-dotnet publish qr2l.GUI/qr2l.GUI.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish
-```
-
-Replace `win-x64` with `linux-x64` to build the Linux binaries.
-
----
-
-## CLI Usage Examples
-
-```powershell
+```bash
 # Basic text QR code
 qr2l "Hello World" output.png
 
 # URL with custom colors
 qr2l "https://example.com" qr.svg --dark-color=FF0000 --light-color=FFFF00
 
-# High error correction with logo
-qr2l "https://github.com" branded.png --error-correction=high --logo=logo.png
+# Branded QR code with a logo
+qr2l "https://github.com" branded.png --logo=logo.png
 
 # Email with subject and body
 qr2l "info@example.com;Hello;Email body text" email.png
@@ -135,14 +124,112 @@ qr2l "John;Doe;+1234567890;john@example.com" contact.png
 # Custom pixel size and shape
 qr2l "https://example.com" custom.png --pixels-per-module=10 --shape=circle
 
-# Export to different formats
+# Other export formats
 qr2l "Sample text" output.pdf
-qr2l "Sample text" output.bmp
+qr2l "Sample text" output.webp
 qr2l "Sample text" output.jpg
+```
+
+> The `circle` shape is decorative: dotted modules are harder for some scanners to read than square ones.
+> Use it with plenty of contrast and test the result with your target devices.
+
+---
+
+## Projects
+
+### **qr2l.Core**
+
+Core library providing QR code generation with support for multiple formats (PNG, SVG, PDF, BMP, JPEG, WebP,
+PostScript) and customization options (colors, logos, error correction levels, pixel shapes). QR codes are computed
+by QRCoder and rendered with SkiaSharp, so the library has no platform-specific dependency.
+
+### **qr2l.CLI**
+
+Command-line interface for generating QR codes from the terminal. Supports all core features with an easy-to-use
+syntax for quick QR code generation.
+
+### **qr2l.GUI**
+
+Cross-platform desktop application built with Avalonia UI. Features real-time preview, color customization, logo
+embedding, clipboard support, a light/dark theme and a multi-language interface.
+
+### **qr2l.Tests**
+
+xUnit test suite covering payload detection, payload formats and export.
+
+---
+
+## Dependencies
+
+- [QRCoder](https://github.com/codebude/QRCoder) 1.7.0 - QR code generation
+- [SkiaSharp](https://github.com/mono/SkiaSharp) 3.119.4 - cross-platform 2D graphics, used for raster rendering
+- [Avalonia UI](https://avaloniaui.net/) 12.1 - cross-platform desktop UI framework (GUI only)
+
+All packages are restored automatically by `dotnet build` or `dotnet restore`.
+
+---
+
+## Building from source
+
+### Prerequisites
+
+- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) or later
+
+### Build and test
+
+```bash
+dotnet build qr2l.slnx
+dotnet test qr2l.Tests/qr2l.Tests.csproj
+```
+
+### Distribution packages
+
+The build scripts publish both executables as self-contained single files and create the release archive in `bin/`.
+
+On Windows (PowerShell):
+
+```powershell
+.\build.ps1                       # qr2l-v<version>-win-x64.zip
+.\build.ps1 -Runtime linux-x64    # qr2l-v<version>-linux-x64.tar.gz, cross-built from Windows
+```
+
+On Linux:
+
+```bash
+./build.sh                        # qr2l-v<version>-linux-x64.tar.gz
+./build.sh Release win-x64        # qr2l-v<version>-win-x64.zip, cross-built from Linux
+```
+
+The scripts are also what the GitHub Actions workflow runs: every push builds both packages and runs the test suite
+on Linux, and pushing a version tag publishes them as a GitHub Release and updates the winget package.
+
+### Manual publishing
+
+Equivalent to the scripts, one project at a time. Replace `win-x64` with `linux-x64` for the Linux binaries:
+
+```bash
+dotnet publish qr2l.CLI/qr2l.CLI.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish
+dotnet publish qr2l.GUI/qr2l.GUI.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish
+```
+
+### Version management
+
+The version is defined once in `Directory.Build.props` and inherited by all projects. To release a new version,
+update the `<Version>` property, commit, then push a tag with the same number:
+
+```bash
+git tag 1.1.0 && git push origin 1.1.0
 ```
 
 ---
 
 ## Development transparency
 
-This project was developed with assistance from AI coding tools. Every released change is reviewed, tested, and accepted by the project maintainer, who remains responsible for the software and its distribution.
+This project was developed with assistance from AI coding tools. Every released change is reviewed, tested, and
+accepted by the project maintainer, who remains responsible for the software and its distribution.
+
+## License
+
+qr2l is released under the [Creative Commons Attribution-ShareAlike 4.0](LICENSE) license (CC-BY-SA-4.0). You may use,
+share and adapt it, including commercially, as long as you give credit and distribute derivatives under the same
+license. The software is provided as is, without warranties of any kind.

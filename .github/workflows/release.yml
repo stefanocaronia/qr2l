@@ -1,4 +1,4 @@
-name: Release
+name: Build and Release
 
 on:
   push:
@@ -29,9 +29,9 @@ jobs:
       - name: Run tests
         run: dotnet test qr2l.Tests/qr2l.Tests.csproj --nologo
 
-  build-release:
-    name: Build and publish Windows release
-    if: startsWith(github.ref, 'refs/tags/')
+  # Both packages are built on every push, so packaging problems surface before a release
+  build-windows:
+    name: Build Windows package
     needs: test
     runs-on: windows-latest
     steps:
@@ -47,17 +47,16 @@ jobs:
         shell: pwsh
         run: .\build.ps1
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Upload package
+        uses: actions/upload-artifact@v4
         with:
-          name: qr2l v${{ github.ref_name }}
-          files: bin/qr2l-v*-win-x64.zip
-          generate_release_notes: true
+          name: windows-package
+          path: bin/qr2l-v*-win-x64.zip
+          if-no-files-found: error
 
-  build-release-linux:
-    name: Build and publish Linux release
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: build-release
+  build-linux:
+    name: Build Linux package
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -69,18 +68,46 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Build distribution package
-        shell: pwsh
-        run: ./build.ps1 -Runtime linux-x64
+        run: ./build.sh Release linux-x64
 
-      - name: Attach to GitHub Release
+      - name: Smoke test the published CLI
+        run: |
+          mkdir -p smoke && tar -xzf bin/qr2l-v*-linux-x64.tar.gz -C smoke
+          ./smoke/qr2l "https://github.com/stefanocaronia/qr2l" smoke/test.png --logo=qr2l.GUI/Assets/app.ico
+          test -s smoke/test.png
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-package
+          path: bin/qr2l-v*-linux-x64.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - build-windows
+      - build-linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: bin/qr2l-v*-linux-x64.tar.gz
+          name: qr2l v${{ github.ref_name }}
+          files: dist/*
+          generate_release_notes: true
 
   update-winget:
     name: Update winget package
+    needs: release
     runs-on: windows-latest
-    needs: build-release
     steps:
       - name: Submit winget version update
         shell: pwsh

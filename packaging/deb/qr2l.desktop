@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=qr2l
+GenericName=QR Code Generator
+Comment=Generate QR codes with custom colors and an embedded logo
+Exec=qr2l-gui
+Icon=qr2l
+Terminal=false
+Categories=Graphics;Utility;
+Keywords=QR;QRCode;barcode;generator;
+StartupWMClass=qr2l-gui

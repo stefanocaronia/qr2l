@@ -32,7 +32,15 @@ extract it anywhere and run `qr2l.exe` or `qr2l-gui.exe`.
 
 ### Linux
 
-Download `qr2l-v<version>-linux-x64.tar.gz` from the [Releases page](https://github.com/stefanocaronia/qr2l/releases):
+**Debian, Ubuntu and derivatives**: download `qr2l_<version>_amd64.deb` from the
+[Releases page](https://github.com/stefanocaronia/qr2l/releases) and install it with apt, which also resolves the
+dependencies. Both tools land in `/usr/bin` and the desktop app appears in the applications menu.
+
+```bash
+sudo apt install ./qr2l_<version>_amd64.deb
+```
+
+**Any other distribution**: download `qr2l-v<version>-linux-x64.tar.gz` and extract it:
 
 ```bash
 tar -xzf qr2l-v<version>-linux-x64.tar.gz
@@ -47,7 +55,7 @@ sudo install -m 755 qr2l qr2l-gui /usr/local/bin/
 ```
 
 **Requirements**: a 64-bit glibc-based distribution. The CLI needs `fontconfig`; the desktop app additionally needs
-an X11 or Wayland session with the usual X libraries. On Debian/Ubuntu:
+an X11 or Wayland session with the usual X libraries. On Debian/Ubuntu (already handled by the `.deb`):
 
 ```bash
 sudo apt install libfontconfig1 libx11-6 libice6 libsm6
@@ -198,6 +206,7 @@ On Linux:
 ```bash
 ./build.sh                        # qr2l-v<version>-linux-x64.tar.gz
 ./build.sh Release win-x64        # qr2l-v<version>-win-x64.zip, cross-built from Linux
+packaging/deb/build-deb.sh        # qr2l_<version>_amd64.deb from the binaries built above (needs dpkg-deb)
 ```
 
 The scripts are also what the GitHub Actions workflow runs: every push builds both packages and runs the test suite

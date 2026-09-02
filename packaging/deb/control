@@ -1,0 +1,15 @@
+Package: qr2l
+Version: @VERSION@
+Section: graphics
+Priority: optional
+Architecture: @ARCH@
+Depends: libc6 (>= 2.27), libfontconfig1, libx11-6, libice6, libsm6
+Installed-Size: @SIZE@
+Maintainer: Stefano Caronia <stefano.caronia@gmail.com>
+Homepage: https://github.com/stefanocaronia/qr2l
+Description: Minimalistic QR code generator (command line and desktop app)
+ qr2l generates QR codes from the command line (qr2l) or from a desktop
+ application (qr2l-gui). It exports to PNG, SVG, PDF, BMP, JPEG, WebP and
+ PostScript, supports custom colors and an embedded logo, and detects the
+ content type automatically: URLs, email, phone numbers, SMS, WhatsApp,
+ WiFi credentials, geolocation, contacts and calendar events.

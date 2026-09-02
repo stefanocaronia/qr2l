@@ -70,17 +70,30 @@ jobs:
       - name: Build distribution package
         run: ./build.sh Release linux-x64
 
+      - name: Build Debian package
+        run: packaging/deb/build-deb.sh amd64
+
       - name: Smoke test the published CLI
         run: |
           mkdir -p smoke && tar -xzf bin/qr2l-v*-linux-x64.tar.gz -C smoke
           ./smoke/qr2l "https://github.com/stefanocaronia/qr2l" smoke/test.png --logo=qr2l.GUI/Assets/app.ico
           test -s smoke/test.png
 
-      - name: Upload package
+      - name: Smoke test the Debian package
+        run: |
+          sudo apt-get install -y ./bin/qr2l_*_amd64.deb
+          qr2l "https://github.com/stefanocaronia/qr2l" deb-test.png
+          test -s deb-test.png
+          desktop-file-validate /usr/share/applications/qr2l.desktop || true
+          sudo apt-get remove -y qr2l
+
+      - name: Upload packages
         uses: actions/upload-artifact@v4
         with:
           name: linux-package
-          path: bin/qr2l-v*-linux-x64.tar.gz
+          path: |
+            bin/qr2l-v*-linux-x64.tar.gz
+            bin/qr2l_*_amd64.deb
           if-no-files-found: error
 
   release:

@@ -47,11 +47,27 @@ jobs:
         shell: pwsh
         run: .\build.ps1
 
-      - name: Upload package
+      - name: Build installer
+        shell: pwsh
+        run: packaging\windows\build-installer.ps1
+
+      - name: Smoke test the installer
+        shell: pwsh
+        run: |
+          $setup = Get-Item bin\qr2l-v*-win-x64-setup.exe
+          $target = "$env:RUNNER_TEMP\qr2l-install"
+          Start-Process -Wait -FilePath $setup.FullName -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$target"
+          & "$target\qr2l.exe" "https://github.com/stefanocaronia/qr2l" "$env:RUNNER_TEMP\setup-test.png"
+          if (-not (Test-Path "$env:RUNNER_TEMP\setup-test.png")) { throw "Installed CLI did not produce output" }
+          Start-Process -Wait -FilePath "$target\unins000.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"
+
+      - name: Upload packages
         uses: actions/upload-artifact@v4
         with:
           name: windows-package
-          path: bin/qr2l-v*-win-x64.zip
+          path: |
+            bin/qr2l-v*-win-x64.zip
+            bin/qr2l-v*-win-x64-setup.exe
           if-no-files-found: error
 
   build-linux:

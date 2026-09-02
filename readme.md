@@ -21,14 +21,18 @@ Every release ships two self-contained executables, with no runtime to install:
 
 ### Windows
 
-With [winget](https://learn.microsoft.com/windows/package-manager/):
+**Installer**: download `qr2l-v<version>-win-x64-setup.exe` from the
+[Releases page](https://github.com/stefanocaronia/qr2l/releases) and run it. It adds qr2l to the Start menu,
+optionally to the desktop and to the `PATH`, and can be removed from *Installed apps*. No administrator rights are
+needed for a per-user install.
+
+**winget**: installs the portable tools and puts `qr2l` and `qr2l-gui` on the `PATH`, without Start menu entries:
 
 ```powershell
 winget install StefanoCaronia.qr2l
 ```
 
-Or download `qr2l-v<version>-win-x64.zip` from the [Releases page](https://github.com/stefanocaronia/qr2l/releases),
-extract it anywhere and run `qr2l.exe` or `qr2l-gui.exe`.
+**Portable**: download `qr2l-v<version>-win-x64.zip`, extract it anywhere and run `qr2l.exe` or `qr2l-gui.exe`.
 
 ### Linux
 
@@ -197,8 +201,9 @@ The build scripts publish both executables as self-contained single files and cr
 On Windows (PowerShell):
 
 ```powershell
-.\build.ps1                       # qr2l-v<version>-win-x64.zip
-.\build.ps1 -Runtime linux-x64    # qr2l-v<version>-linux-x64.tar.gz, cross-built from Windows
+.\build.ps1                                # qr2l-v<version>-win-x64.zip
+.\build.ps1 -Runtime linux-x64             # qr2l-v<version>-linux-x64.tar.gz, cross-built from Windows
+packaging\windows\build-installer.ps1      # qr2l-v<version>-win-x64-setup.exe (needs Inno Setup 6)
 ```
 
 On Linux:

@@ -35,12 +35,14 @@ echo "📦 Building $PACKAGE.deb"
 mkdir -p "$STAGE/DEBIAN" \
          "$STAGE/usr/bin" \
          "$STAGE/usr/share/applications" \
-         "$STAGE/usr/share/icons/hicolor/32x32/apps" \
+         "$STAGE/usr/share/icons/hicolor/256x256/apps" \
+         "$STAGE/usr/share/icons/hicolor/scalable/apps" \
          "$STAGE/usr/share/doc/qr2l"
 
 install -m 755 bin/qr2l bin/qr2l-gui "$STAGE/usr/bin/"
 install -m 644 packaging/deb/qr2l.desktop "$STAGE/usr/share/applications/qr2l.desktop"
-install -m 644 qr2l.GUI/Assets/qr2l.png "$STAGE/usr/share/icons/hicolor/32x32/apps/qr2l.png"
+install -m 644 qr2l.GUI/Assets/qr2l.png "$STAGE/usr/share/icons/hicolor/256x256/apps/qr2l.png"
+install -m 644 qr2l.GUI/Assets/qr2l.svg "$STAGE/usr/share/icons/hicolor/scalable/apps/qr2l.svg"
 install -m 644 LICENSE "$STAGE/usr/share/doc/qr2l/copyright"
 
 # Installed-Size is expressed in KiB

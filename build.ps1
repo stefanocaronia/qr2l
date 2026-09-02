@@ -60,11 +60,27 @@ if ($isWindowsTarget) {
 } else {
     $archiveName = "qr2l-v$version-$Runtime.tar.gz"
     Write-Host "📦 Creating TAR.GZ archive"
-    tar -czf "bin/$archiveName" -C bin @binaries
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "❌ Archive creation failed" -ForegroundColor Red
-        exit 1
+    # Written with .NET's TarWriter so the executable bit is set explicitly:
+    # an external tar run on Windows would drop it, producing binaries Linux cannot launch.
+    $root = (Get-Location).Path
+    $executableMode = [System.IO.UnixFileMode]"UserRead, UserWrite, UserExecute, GroupRead, GroupExecute, OtherRead, OtherExecute"
+    $fileStream = [System.IO.File]::Create((Join-Path $root "bin/$archiveName"))
+    $gzipStream = [System.IO.Compression.GZipStream]::new($fileStream, [System.IO.Compression.CompressionLevel]::Optimal)
+    $tarWriter = [System.Formats.Tar.TarWriter]::new($gzipStream, [System.Formats.Tar.TarEntryFormat]::Pax, $false)
+
+    try {
+        foreach ($name in $binaries) {
+            $entry = [System.Formats.Tar.PaxTarEntry]::new([System.Formats.Tar.TarEntryType]::RegularFile, $name)
+            $entry.Mode = $executableMode
+            $entry.DataStream = [System.IO.File]::OpenRead((Join-Path $root "bin/$name"))
+            $tarWriter.WriteEntry($entry)
+            $entry.DataStream.Dispose()
+        }
+    } finally {
+        $tarWriter.Dispose()
+        $gzipStream.Dispose()
+        $fileStream.Dispose()
     }
 }
 

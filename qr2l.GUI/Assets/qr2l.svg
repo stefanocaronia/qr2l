@@ -1,37 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
-  <!-- qr2l application icon: QR modules with a wrench overlaid, on a rounded white tile -->
+  <!-- qr2l application icon: a QR finder square, two pixels and a wrench, on a rounded white tile -->
   <rect x="8" y="8" width="240" height="240" rx="44" fill="#ffffff" stroke="#cbd5e1" stroke-width="4"/>
 
-  <!-- QR modules on a 16px grid starting at (40,40) -->
   <g fill="#111827">
-    <!-- finder pattern: 7x7 ring with a 3x3 core -->
-    <path fill-rule="evenodd" d="M40 40h112v112H40z M56 56v80h80V56z"/>
-    <rect x="72" y="72" width="48" height="48"/>
+    <!-- finder pattern in the top-left corner: ring and core -->
+    <path fill-rule="evenodd" d="M36 36h96v96H36z M50 50v68h68V50z"/>
+    <rect x="64" y="64" width="40" height="40"/>
 
-    <!-- data modules to the right of the finder pattern -->
-    <rect x="168" y="40" width="16" height="16"/>
-    <rect x="200" y="40" width="16" height="16"/>
-    <rect x="184" y="56" width="16" height="16"/>
-    <rect x="216" y="56" width="16" height="16"/>
-    <rect x="168" y="72" width="16" height="16"/>
-    <rect x="200" y="88" width="16" height="16"/>
-    <rect x="168" y="104" width="16" height="16"/>
-    <rect x="216" y="104" width="16" height="16"/>
-    <rect x="184" y="120" width="16" height="16"/>
-
-    <!-- data modules below the finder pattern -->
-    <rect x="40" y="168" width="16" height="16"/>
-    <rect x="88" y="168" width="16" height="16"/>
-    <rect x="56" y="184" width="16" height="16"/>
-    <rect x="120" y="184" width="16" height="16"/>
-    <rect x="72" y="200" width="16" height="16"/>
-    <rect x="104" y="200" width="16" height="16"/>
-    <rect x="40" y="216" width="16" height="16"/>
-    <rect x="88" y="216" width="16" height="16"/>
+    <!-- two pixels -->
+    <rect x="176" y="44" width="32" height="32"/>
+    <rect x="44" y="176" width="32" height="32"/>
   </g>
 
   <!-- wrench: head towards the bottom-right corner, white halo separates it from the modules -->
-  <g transform="translate(160 152) rotate(-45)">
+  <g transform="translate(132 128) rotate(-45) scale(1.4)">
     <g fill="#ffffff" stroke="#ffffff" stroke-width="14" stroke-linejoin="round" stroke-linecap="round">
       <rect x="-13" y="-62" width="26" height="104" rx="13"/>
       <path d="M-18 91.2A36 36 0 1 1 18 91.2L12 91.2L12 66L-12 66L-12 91.2Z"/>

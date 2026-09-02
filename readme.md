@@ -141,3 +141,8 @@ qr2l "Sample text" output.bmp
 qr2l "Sample text" output.jpg
 ```
 
+---
+
+## Development transparency
+
+This project was developed with assistance from AI coding tools. Every released change is reviewed, tested, and accepted by the project maintainer, who remains responsible for the software and its distribution.

@@ -103,95 +103,16 @@ qr2l "Sample text" output.jpg
 
 ---
 
-## Projects
-
-### **qr2l.Core**
-
-Core library providing QR code generation with support for multiple formats (PNG, SVG, PDF, BMP, JPEG, WebP,
-PostScript) and customization options (colors, logos, error correction levels, pixel shapes). QR codes are computed
-by QRCoder and rendered with SkiaSharp, so the library has no platform-specific dependency.
-
-### **qr2l.CLI**
-
-Command-line interface for generating QR codes from the terminal. Supports all core features with an easy-to-use
-syntax for quick QR code generation.
-
-### **qr2l.GUI**
-
-Cross-platform desktop application built with Avalonia UI. Features real-time preview, color customization, logo
-embedding, clipboard support, a light/dark theme and a multi-language interface.
-
-### **qr2l.Tests**
-
-xUnit test suite covering payload detection, payload formats and export.
-
----
-
-## Dependencies
-
-- [QRCoder](https://github.com/codebude/QRCoder) 1.7.0 - QR code generation
-- [SkiaSharp](https://github.com/mono/SkiaSharp) 3.119.4 - cross-platform 2D graphics, used for raster rendering
-- [Avalonia UI](https://avaloniaui.net/) 12.1 - cross-platform desktop UI framework (GUI only)
-
----
-
 ## Building from source
 
-### Prerequisites
-
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) or later
-
-### Build and test
+Requires the [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0).
 
 ```bash
 dotnet build qr2l.slnx
 dotnet test qr2l.Tests/qr2l.Tests.csproj
 ```
 
-### Distribution packages
-
-A single command publishes both executables as self-contained single files and produces every package for the target
-platform in `bin/`: the archive plus the Windows installer or the Debian package.
-
-On Windows (PowerShell):
-
-```powershell
-.\build.ps1                       # zip + installer (the installer needs Inno Setup 6)
-.\build.ps1 -SkipInstaller        # zip only
-.\build.ps1 -Runtime linux-x64    # tar.gz, cross-built from Windows
-```
-
-On Linux:
-
-```bash
-./build.sh                                 # tar.gz + .deb (the package needs dpkg-deb)
-./build.sh Release linux-x64 --skip-deb    # tar.gz only
-./build.sh Release win-x64                 # zip, cross-built from Linux
-```
-
-Missing optional tooling is not an error: the scripts skip the installer or the Debian package with a note and still
-produce the archive.
-
-The scripts are also what the GitHub Actions workflow runs: every push builds and smoke-tests both platforms and runs
-the test suite on Linux, and pushing a version tag publishes everything as a GitHub Release.
-
-### Manual publishing
-
-Equivalent to the scripts, one project at a time. Replace `win-x64` with `linux-x64` for the Linux binaries:
-
-```bash
-dotnet publish qr2l.CLI/qr2l.CLI.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish
-dotnet publish qr2l.GUI/qr2l.GUI.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o bin/publish
-```
-
-### Version management
-
-The version is defined once in `Directory.Build.props` and inherited by all projects. To release a new version,
-update the `<Version>` property, commit, then push a tag with the same number:
-
-```bash
-git tag 1.1.0 && git push origin 1.1.0
-```
+Packaging, the project structure and the release process are described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 

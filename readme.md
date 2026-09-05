@@ -6,7 +6,7 @@ Generate QR codes from the command line or from a desktop app, on Windows and Li
 JPEG, WebP and PostScript, pick your colors, embed a logo, and let the tool detect what you are encoding: URLs, email,
 phone numbers, SMS, WhatsApp, WiFi credentials, geolocation, contacts and calendar events.
 
-🌐 **Web version**: [stefanocaronia.github.io/qr2l](https://stefanocaronia.github.io/qr2l/) — the full tool, in the browser
+🌐 **Web version**: [stefanocaronia.github.io/qr2l](https://stefanocaronia.github.io/qr2l/), the full tool in the browser
 
 ---
 

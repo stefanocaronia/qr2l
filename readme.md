@@ -235,7 +235,7 @@ git tag 1.1.0 && git push origin 1.1.0
 
 ---
 
-## Development transparency
+## Development notes
 
 This project was developed with assistance from AI coding tools. Every released change is reviewed, tested, and
 accepted by the project maintainer, who remains responsible for the software and its distribution.

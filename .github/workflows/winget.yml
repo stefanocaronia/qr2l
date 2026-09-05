@@ -1,0 +1,29 @@
+name: Update winget package
+
+# Manual trigger: submits an already published release to winget whenever the maintainer decides.
+# The release workflow also attempts this automatically on every tag, once the package is in the catalog.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to submit (e.g. 1.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  update-winget:
+    name: Submit ${{ inputs.tag }} to winget
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Submit winget version update
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: packaging/winget/update.ps1 -Tag "${{ inputs.tag }}"

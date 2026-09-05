@@ -138,21 +138,16 @@ jobs:
     needs: release
     runs-on: windows-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Skips with a note until the package is in the catalog; the winget workflow can be run manually at any time
       - name: Submit winget version update
         shell: pwsh
         env:
           WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
-        run: |
-          if (-not $env:WINGET_TOKEN) {
-            Write-Host "WINGET_TOKEN secret not set, skipping winget update"
-            exit 0
-          }
-          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
-          $version = "${{ github.ref_name }}".TrimStart("v")
-          .\wingetcreate.exe update StefanoCaronia.qr2l `
-            --version $version `
-            --urls "https://github.com/stefanocaronia/qr2l/releases/download/${{ github.ref_name }}/qr2l-v$version-win-x64.zip" `
-            --submit --token $env:WINGET_TOKEN
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: packaging/winget/update.ps1 -Tag "${{ github.ref_name }}"
 
   deploy-pages:
     name: Deploy HTML version to GitHub Pages

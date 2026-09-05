@@ -26,7 +26,8 @@ Every release ships two self-contained executables, with no runtime to install:
 optionally to the desktop and to the `PATH`, and can be removed from *Installed apps*. No administrator rights are
 needed for a per-user install.
 
-**winget**: installs the portable tools and puts `qr2l` and `qr2l-gui` on the `PATH`, without Start menu entries:
+**winget**: installs the portable tools and puts `qr2l` and `qr2l-gui` on the `PATH`, without Start menu entries.
+The package is awaiting approval in the winget community repository; until then use the installer or the zip.
 
 ```powershell
 winget install StefanoCaronia.qr2l

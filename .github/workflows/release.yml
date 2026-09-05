@@ -130,7 +130,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: qr2l v${{ github.ref_name }}
-          files: dist/*
+          # Explicit patterns: the download step can leave helper files in dist/
+          files: |
+            dist/qr2l-v*-win-x64.zip
+            dist/qr2l-v*-win-x64-setup.exe
+            dist/qr2l-v*-linux-x64.tar.gz
+            dist/qr2l_*_amd64.deb
           generate_release_notes: true
 
   update-winget:

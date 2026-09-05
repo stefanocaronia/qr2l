@@ -26,13 +26,6 @@ Every release ships two self-contained executables, with no runtime to install:
 optionally to the desktop and to the `PATH`, and can be removed from *Installed apps*. No administrator rights are
 needed for a per-user install.
 
-**winget**: installs the portable tools and puts `qr2l` and `qr2l-gui` on the `PATH`, without Start menu entries.
-The package is awaiting approval in the winget community repository; until then use the installer or the zip.
-
-```powershell
-winget install StefanoCaronia.qr2l
-```
-
 **Portable**: download `qr2l-v<version>-win-x64.zip`, extract it anywhere and run `qr2l.exe` or `qr2l-gui.exe`.
 
 ### Linux
@@ -220,8 +213,7 @@ Missing optional tooling is not an error: the scripts skip the installer or the 
 produce the archive.
 
 The scripts are also what the GitHub Actions workflow runs: every push builds and smoke-tests both platforms and runs
-the test suite on Linux, and pushing a version tag publishes everything as a GitHub Release and updates the winget
-package.
+the test suite on Linux, and pushing a version tag publishes everything as a GitHub Release.
 
 ### Manual publishing
 

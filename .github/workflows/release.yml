@@ -123,6 +123,8 @@ jobs:
       - name: Download packages
         uses: actions/download-artifact@v4
         with:
+          # Only the package artifacts: the Pages job uploads its own artifact in the same run
+          pattern: '*-package'
           path: dist
           merge-multiple: true
 

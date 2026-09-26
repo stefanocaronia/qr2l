@@ -19,6 +19,11 @@ runtime to install. Get them from the [Releases page](https://github.com/stefano
 
 - **Installer**: `qr2l-v<version>-win-x64-setup.exe`
 - **Portable**: `qr2l-v<version>-win-x64.zip`, extract and run
+- **winget**:
+
+  ```powershell
+  winget install StefanoCaronia.qr2l
+  ```
 
 ### Linux
 

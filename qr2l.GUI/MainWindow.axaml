@@ -33,6 +33,12 @@
             <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" />
             <Setter Property="Padding" Value="6,4" />
         </Style>
+        <!-- Pulsante del tipo di contenuto: sembra un'etichetta finché non ci si passa sopra -->
+        <Style Selector="Button.mode">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="4,2" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
     </Window.Styles>
 
     <DockPanel x:Name="root">
@@ -79,7 +85,13 @@
         <!-- Barra di stato -->
         <Border DockPanel.Dock="Bottom" Classes="bar">
             <Grid ColumnDefinitions="*,Auto">
-                <TextBlock x:Name="detectedMode" Text="Text" VerticalAlignment="Center" FontWeight="SemiBold" />
+                <!-- Tipo di contenuto: rilevato in automatico, cliccando si sceglie a mano (menu creato nel code-behind) -->
+                <Button x:Name="modeButton" Classes="mode" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                        <TextBlock x:Name="modeLabel" VerticalAlignment="Center" />
+                        <mi:MaterialIcon Kind="MenuUp" Width="16" Height="16" />
+                    </StackPanel>
+                </Button>
                 <Button Grid.Column="1" x:Name="repoButton" Classes="tool" Click="OnRepoClick">
                     <mi:MaterialIcon Kind="Github" />
                 </Button>

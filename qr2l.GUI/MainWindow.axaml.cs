@@ -33,6 +33,26 @@ public partial class MainWindow : Window
     private byte[]? logo;
     private bool suppressLanguageEvent;
 
+    // Tipi di contenuto nel menu della barra di stato, nell'ordine in cui compaiono
+    private static readonly PayloadMode[] SelectableModes = [
+        PayloadMode.Auto,
+        PayloadMode.Text,
+        PayloadMode.Url,
+        PayloadMode.Mail,
+        PayloadMode.Phone,
+        PayloadMode.SMS,
+        PayloadMode.WhatsApp,
+        PayloadMode.WiFi,
+        PayloadMode.Geolocation,
+        PayloadMode.ContactData,
+        PayloadMode.Event
+    ];
+
+    private readonly MenuFlyout modeMenu = new() { Placement = PlacementMode.TopEdgeAlignedLeft };
+    private PayloadMode selectedMode = PayloadMode.Auto;
+    private PayloadMode detectedMode = PayloadMode.Text;
+    private bool invalidContent;
+
     #endregion
 
     public MainWindow()
@@ -48,6 +68,7 @@ public partial class MainWindow : Window
         bgColorView = CreateColorView(Colors.White);
         fgColorFlyout = CreateColorFlyout(fgColorView);
         bgColorFlyout = CreateColorFlyout(bgColorView);
+        modeButton.Flyout = modeMenu;
 
         PopulateLanguages();
         ApplyLanguage();
@@ -114,26 +135,29 @@ public partial class MainWindow : Window
     {
         string text = qrText.Text?.Trim() ?? string.Empty;
 
+        detectedMode = text.Length == 0 ? PayloadMode.Text : QrGenerator.DetectPayloadMode(text);
+        invalidContent = false;
+
         if (text.Length == 0) {
             ClearImageData();
-            detectedMode.Text = PayloadMode.Text.ToString();
-            RefreshButtonStates();
-            return;
+        } else {
+            try {
+                pngData = QrGenerator.Generate(text, ExportFormat.Png, CreateOptions());
+                svgData = QrGenerator.GenerateSvgString(text, CreateOptions());
+
+                (preview.Source as IDisposable)?.Dispose();
+                using var stream = new MemoryStream(pngData);
+                preview.Source = new AvaloniaBitmap(stream);
+                previewHost.Background = new SolidColorBrush(bgColorView.Color);
+            } catch {
+                // Succede quando il testo non ha la forma richiesta dal tipo scelto, per esempio un evento senza date
+                ClearImageData();
+                invalidContent = true;
+            }
         }
 
-        try {
-            pngData = QrGenerator.Generate(text, ExportFormat.Png, CreateOptions());
-            svgData = QrGenerator.GenerateSvgString(text, CreateOptions());
-
-            (preview.Source as IDisposable)?.Dispose();
-            using var stream = new MemoryStream(pngData);
-            preview.Source = new AvaloniaBitmap(stream);
-            previewHost.Background = new SolidColorBrush(bgColorView.Color);
-        } catch {
-            ClearImageData();
-        }
-
-        detectedMode.Text = QrGenerator.DetectPayloadMode(text).ToString();
+        UpdateModeLabel();
+        UpdatePlaceholder();
         RefreshButtonStates();
     }
 
@@ -143,8 +167,14 @@ public partial class MainWindow : Window
             darkColor = ToQrColor(fgColorView.Color),
             lightColor = ToQrColor(bgColorView.Color),
             logo = logo,
-            pixelsPerModule = 20
+            pixelsPerModule = 20,
+            payloadMode = selectedMode
         };
+    }
+
+    private void UpdatePlaceholder()
+    {
+        previewPlaceholder.Text = Localization.T(invalidContent ? "invalid_content" : "waiting");
     }
 
     private static QrColor ToQrColor(AvaloniaColor color)
@@ -169,6 +199,72 @@ public partial class MainWindow : Window
         copyImageButton.IsEnabled = hasData;
         copySvgButton.IsEnabled = svgData != null;
         previewPlaceholder.IsVisible = !hasData;
+    }
+
+    #endregion
+
+    #region Content type
+
+    /// <summary>
+    /// In automatico l'etichetta mostra il tipo rilevato; dopo una scelta manuale, il tipo scelto.
+    /// </summary>
+    private void UpdateModeLabel()
+    {
+        modeLabel.Text = selectedMode == PayloadMode.Auto
+            ? $"{ModeName(detectedMode)} · {ModeName(PayloadMode.Auto)}"
+            : ModeName(selectedMode);
+    }
+
+    private void BuildModeMenu()
+    {
+        modeMenu.Items.Clear();
+
+        foreach (PayloadMode mode in SelectableModes) {
+            var item = new MenuItem {
+                Header = ModeName(mode),
+                Tag = mode,
+                ToggleType = MenuItemToggleType.Radio,
+                GroupName = "mode",
+                IsChecked = mode == selectedMode
+            };
+
+            item.Click += OnModeSelected;
+            modeMenu.Items.Add(item);
+
+            // L'automatico resta separato dai tipi specifici
+            if (mode == PayloadMode.Auto) {
+                modeMenu.Items.Add(new Separator());
+            }
+        }
+    }
+
+    private void OnModeSelected(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: PayloadMode mode }) {
+            return;
+        }
+
+        selectedMode = mode;
+        BuildModeMenu();
+        Generate();
+    }
+
+    private static string ModeName(PayloadMode mode)
+    {
+        return mode switch {
+            PayloadMode.Auto => Localization.T("mode_auto"),
+            PayloadMode.Text => Localization.T("mode_text"),
+            PayloadMode.Url => Localization.T("fmt_url"),
+            PayloadMode.Mail => Localization.T("fmt_mail"),
+            PayloadMode.Phone => Localization.T("fmt_phone"),
+            PayloadMode.SMS => Localization.T("fmt_sms"),
+            PayloadMode.WhatsApp => Localization.T("fmt_whatsapp"),
+            PayloadMode.WiFi => Localization.T("fmt_wifi"),
+            PayloadMode.Geolocation => Localization.T("fmt_geo"),
+            PayloadMode.ContactData => Localization.T("fmt_contact"),
+            PayloadMode.Event => Localization.T("fmt_event"),
+            var _ => mode.ToString()
+        };
     }
 
     #endregion
@@ -357,11 +453,14 @@ public partial class MainWindow : Window
         ToolTip.SetTip(fgColorButton, Localization.T("tip_fg"));
         ToolTip.SetTip(bgColorButton, Localization.T("tip_bg"));
         ToolTip.SetTip(qrText, Localization.T("tip_text"));
+        ToolTip.SetTip(modeButton, Localization.T("tip_mode"));
 
         qrText.PlaceholderText = Localization.T("placeholder");
-        previewPlaceholder.Text = Localization.T("waiting");
         helpText.Text = BuildHelpText();
 
+        BuildModeMenu();
+        UpdateModeLabel();
+        UpdatePlaceholder();
         ApplyLogoState();
     }
 

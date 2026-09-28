@@ -76,6 +76,8 @@ The version is defined once in `Directory.Build.props` and inherited by all proj
    git tag 1.1.0 && git push origin 1.1.0
    ```
 
-The release workflow does the rest. The winget package is updated automatically once it is in the community
-repository; until then, or to submit a specific version on demand, run the *Update winget package* workflow from the
-Actions tab with the release tag.
+The release workflow does the rest, winget included. The winget manifests live in `packaging/winget`: package name,
+description and installer are edited there, and at release time the script fills in the version and the installer
+checksum and submits them. To submit a version again, run the *Update winget package* workflow from the Actions tab
+with the release tag. Run locally without a token, `packaging/winget/update.ps1 -Tag <version>` only writes the
+manifests, to check them with `winget validate`.

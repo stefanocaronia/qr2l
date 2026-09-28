@@ -148,7 +148,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Skips with a note until the package is in the catalog; the winget workflow can be run manually at any time
+      # Fills the manifests in packaging/winget with version and checksum; the winget workflow can resubmit by hand
       - name: Submit winget version update
         shell: pwsh
         env:

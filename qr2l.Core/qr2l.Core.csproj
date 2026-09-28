@@ -13,4 +13,8 @@
       <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
     </ItemGroup>
 
+    <ItemGroup>
+      <InternalsVisibleTo Include="qr2l.Tests" />
+    </ItemGroup>
+
 </Project>

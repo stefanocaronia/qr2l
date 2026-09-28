@@ -54,7 +54,7 @@ public static class QrGenerator
         return generator.CreateQrCode(payload, ConvertErrorCorrectionLevel(options.errorCorrection));
     }
 
-    private static string PreparePayload(string text, PayloadMode mode, QrCodeOptions? options = null)
+    internal static string PreparePayload(string text, PayloadMode mode, QrCodeOptions? options = null)
     {
         if (mode == PayloadMode.Auto) {
             mode = DetectPayloadMode(text);
@@ -288,42 +288,77 @@ public static class QrGenerator
 
     private static string PrepareWiFiPayload(string text, QrCodeOptions? options)
     {
-        // If already in complete WIFI: format, return as-is
+        // Già nel formato completo: si usa così com'è
         if (text.StartsWith("WIFI:T:", StringComparison.OrdinalIgnoreCase)) {
             return text;
         }
-        
-        // Remove WIFI: prefix if present and parse simplified format
+
         if (text.StartsWith("WIFI:", StringComparison.OrdinalIgnoreCase)) {
             text = text.Substring(5);
         }
-        
-        string[] parts = text.Split(';');
 
-        if (parts.Length < 1 || parts.Length > 2) {
+        // Formato semplificato "rete;password": la rete arriva fino al primo punto e virgola e tutto
+        // il resto è la password, che quindi può contenere a sua volta dei punti e virgola
+        int separator = text.IndexOf(';');
+        string ssid = (separator < 0 ? text : text[..separator]).Trim();
+        string password = separator < 0 ? string.Empty : text[(separator + 1)..].Trim();
+
+        if (ssid.Length == 0) {
             throw new ArgumentException("WiFi payload must be in format: WIFI:ssid;password (password optional for open networks)");
         }
 
-        string ssid = parts[0].Trim();
-        string password = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+        return BuildWiFiPayload(
+            ssid,
+            password,
+            options?.wifiAuthType ?? WiFiAuthenticationType.WPA,
+            options?.wifiHidden ?? false);
+    }
 
-        WiFiAuthenticationType authType = options?.wifiAuthType ?? WiFiAuthenticationType.WPA;
-        bool hidden = options?.wifiHidden ?? false;
+    /// <summary>
+    /// Compone il testo che i telefoni leggono per collegarsi a una rete:
+    /// <c>WIFI:T:protezione;S:rete;P:password;H:true;;</c>, dove H compare solo per le reti nascoste.
+    /// </summary>
+    internal static string BuildWiFiPayload(string ssid, string password, WiFiAuthenticationType authentication, bool hidden)
+    {
+        // Senza password la rete è aperta, qualunque protezione sia stata indicata
+        WiFiAuthenticationType effective = password.Length == 0 ? WiFiAuthenticationType.NoPassword : authentication;
 
-        string authTypeStr = authType switch {
-            WiFiAuthenticationType.WPA => "WPA",
+        string type = effective switch {
             WiFiAuthenticationType.WEP => "WEP",
             WiFiAuthenticationType.NoPassword => "nopass",
             var _ => "WPA"
         };
 
-        string hiddenStr = hidden ? "H:true;" : "";
+        var payload = new StringBuilder($"WIFI:T:{type};S:{EscapeWiFiValue(ssid)};");
 
-        if (authType == WiFiAuthenticationType.NoPassword || string.IsNullOrEmpty(password)) {
-            return $"WIFI:T:{authTypeStr};S:{ssid};{hiddenStr};";
+        if (effective != WiFiAuthenticationType.NoPassword) {
+            payload.Append($"P:{EscapeWiFiValue(password)};");
         }
 
-        return $"WIFI:T:{authTypeStr};S:{ssid};P:{password};{hiddenStr};";
+        if (hidden) {
+            payload.Append("H:true;");
+        }
+
+        return payload.Append(';').ToString();
+    }
+
+    /// <summary>
+    /// Nel formato WiFi i caratteri \ ; , : e " fanno da separatori: dentro nome e password
+    /// vanno preceduti da una barra rovesciata, altrimenti il telefono legge un valore sbagliato.
+    /// </summary>
+    private static string EscapeWiFiValue(string value)
+    {
+        var escaped = new StringBuilder(value.Length);
+
+        foreach (char character in value) {
+            if (character is '\\' or ';' or ',' or ':' or '"') {
+                escaped.Append('\\');
+            }
+
+            escaped.Append(character);
+        }
+
+        return escaped.ToString();
     }
 
     private static QRCodeGenerator.ECCLevel ConvertErrorCorrectionLevel(ErrorCorrectionLevel level)

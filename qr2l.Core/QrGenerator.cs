@@ -10,27 +10,16 @@ public static class QrGenerator
 {
     public static byte[] Generate(string text, ExportFormat format, QrCodeOptions? options = null)
     {
-        if (string.IsNullOrWhiteSpace(text)) {
-            throw new ArgumentException("Text cannot be null or empty.", nameof(text));
-        }
-
         options ??= new QrCodeOptions();
 
-        string payload = PreparePayload(text, options.payloadMode, options);
-
-        if (options.logo != null && options.errorCorrection != ErrorCorrectionLevel.Maximum) {
-            options.errorCorrection = ErrorCorrectionLevel.Maximum;
-        }
-
-        using var generator = new QRCodeGenerator();
-        QRCodeData data = generator.CreateQrCode(payload, ConvertErrorCorrectionLevel(options.errorCorrection));
+        using QRCodeData data = CreateQrData(text, options);
 
         return format switch {
             ExportFormat.Png => EncodeRaster(data, options, SKEncodedImageFormat.Png),
             ExportFormat.Jpeg => EncodeRaster(data, options, SKEncodedImageFormat.Jpeg),
             ExportFormat.WebP => EncodeRaster(data, options, SKEncodedImageFormat.Webp),
             ExportFormat.Bmp => GenerateBmp(data, options),
-            ExportFormat.Svg => GenerateSvgBytes(data, options),
+            ExportFormat.Svg => Encoding.UTF8.GetBytes(BuildSvg(data, options)),
             ExportFormat.Pdf => GeneratePdf(data, options),
             ExportFormat.PostScript => GeneratePostScript(data, options),
             var _ => throw new ArgumentException($"Unsupported format: {format}")
@@ -39,11 +28,21 @@ public static class QrGenerator
 
     public static string GenerateSvgString(string text, QrCodeOptions? options = null)
     {
+        options ??= new QrCodeOptions();
+
+        using QRCodeData data = CreateQrData(text, options);
+        return BuildSvg(data, options);
+    }
+
+    /// <summary>
+    /// Calcola la matrice del codice. Con un logo la correzione d'errore sale al massimo,
+    /// perché il logo copre una parte dei moduli.
+    /// </summary>
+    private static QRCodeData CreateQrData(string text, QrCodeOptions options)
+    {
         if (string.IsNullOrWhiteSpace(text)) {
             throw new ArgumentException("Text cannot be null or empty.", nameof(text));
         }
-
-        options ??= new QrCodeOptions();
 
         string payload = PreparePayload(text, options.payloadMode, options);
 
@@ -52,15 +51,7 @@ public static class QrGenerator
         }
 
         using var generator = new QRCodeGenerator();
-        QRCodeData data = generator.CreateQrCode(payload, ConvertErrorCorrectionLevel(options.errorCorrection));
-
-        var svgQr = new SvgQRCode(data);
-        return svgQr.GetGraphic(
-            pixelsPerModule: 20,
-            darkColorHex: options.darkColor.ToHex(),
-            lightColorHex: options.lightColor.ToHex(),
-            drawQuietZones: true
-        );
+        return generator.CreateQrCode(payload, ConvertErrorCorrectionLevel(options.errorCorrection));
     }
 
     private static string PreparePayload(string text, PayloadMode mode, QrCodeOptions? options = null)
@@ -354,8 +345,8 @@ public static class QrGenerator
     // Il PDF conserva le dimensioni fisiche delle versioni precedenti: il disegno in pixel reso a 150 dpi
     private const float PdfDpi = 150f;
 
-    // Lato più lungo, in pixel, del logo incorporato nel PostScript
-    private const int PostScriptLogoMaxSize = 512;
+    // Lato più lungo, in pixel, del logo incorporato nei formati vettoriali (SVG e PostScript)
+    private const int EmbeddedLogoMaxSize = 512;
 
     private const string HexDigits = "0123456789ABCDEF";
 
@@ -494,17 +485,92 @@ public static class QrGenerator
         return new SKColor(color.R, color.G, color.B);
     }
 
-    private static byte[] GenerateSvgBytes(QRCodeData data, QrCodeOptions options)
+    /// <summary>
+    /// SVG scritto direttamente, con la stessa geometria degli altri formati: colori, forma dei pixel e logo.
+    /// Le coordinate sono in moduli, mentre larghezza e altezza nominali seguono i pixel per modulo.
+    /// </summary>
+    private static string BuildSvg(QRCodeData data, QrCodeOptions options)
     {
-        var svgQr = new SvgQRCode(data);
-        string svg = svgQr.GetGraphic(
-            pixelsPerModule: 20,
-            darkColorHex: options.darkColor.ToHex(),
-            lightColorHex: options.lightColor.ToHex(),
-            drawQuietZones: true
-        );
+        List<BitArray> matrix = data.ModuleMatrix;
+        int modules = matrix.Count;
+        int size = modules * options.pixelsPerModule;
+        bool circles = options.shape == PixelShape.Circle;
+        string radius = Num(CirclePixelFactor / 2f);
+        string diameter = Num(CirclePixelFactor);
 
-        return Encoding.UTF8.GetBytes(svg);
+        bool IsDot(int x, int y) => matrix[y][x] && circles && !IsFinderPattern(x, y, modules);
+        bool IsSquare(int x, int y) => matrix[y][x] && !IsDot(x, y);
+
+        var squares = new StringBuilder();
+        var dots = new StringBuilder();
+
+        for (var y = 0; y < modules; y++) {
+            for (var x = 0; x < modules; x++) {
+                if (IsDot(x, y)) {
+                    // Un cerchio come due archi, così tutti i moduli tondi stanno in un solo tracciato
+                    dots.Append($"M{Num(x + 0.5f - (CirclePixelFactor / 2f))},{Num(y + 0.5f)}");
+                    dots.Append($"a{radius},{radius} 0 1,0 {diameter},0a{radius},{radius} 0 1,0 -{diameter},0");
+                    continue;
+                }
+
+                if (!IsSquare(x, y)) {
+                    continue;
+                }
+
+                // I moduli quadrati consecutivi sulla stessa riga diventano un solo rettangolo
+                var run = 1;
+
+                while (x + run < modules && IsSquare(x + run, y)) {
+                    run++;
+                }
+
+                squares.Append($"M{x},{y}h{run}v1h-{run}z");
+                x += run - 1;
+            }
+        }
+
+        string dark = options.darkColor.ToHex();
+        var svg = new StringBuilder();
+
+        svg.Append("<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.1\" ");
+        svg.Append($"width=\"{size}\" height=\"{size}\" viewBox=\"0 0 {modules} {modules}\">\n");
+        svg.Append($"<rect width=\"{modules}\" height=\"{modules}\" fill=\"{options.lightColor.ToHex()}\"/>\n");
+
+        // crispEdges tiene i bordi dei quadrati netti; i cerchi restano invece sfumati
+        if (squares.Length > 0) {
+            svg.Append($"<path fill=\"{dark}\" shape-rendering=\"crispEdges\" d=\"{squares}\"/>\n");
+        }
+
+        if (dots.Length > 0) {
+            svg.Append($"<path fill=\"{dark}\" d=\"{dots}\"/>\n");
+        }
+
+        if (options.logo != null) {
+            AppendSvgLogo(svg, modules, options.logo, options.lightColor);
+        }
+
+        svg.Append("</svg>\n");
+        return svg.ToString();
+    }
+
+    /// <summary>
+    /// Il logo entra nell'SVG come immagine PNG incorporata, trasparenza compresa, sopra il suo riquadro di sfondo.
+    /// </summary>
+    private static void AppendSvgLogo(StringBuilder svg, float size, byte[] logoBytes, QrColor background)
+    {
+        using SKBitmap logo = DecodeLogo(logoBytes);
+        LogoPlacement placement = PlaceLogo(size, logo.Width, logo.Height);
+
+        using SKBitmap embedded = RenderEmbeddedLogo(logo, SKColors.Transparent);
+        using SKData png = embedded.Encode(SKEncodedImageFormat.Png, 100);
+
+        SKRect back = placement.Background;
+        SKRect area = placement.Image;
+
+        svg.Append($"<rect x=\"{Num(back.Left)}\" y=\"{Num(back.Top)}\" width=\"{Num(back.Width)}\" height=\"{Num(back.Height)}\" ");
+        svg.Append($"fill=\"{background.ToHex()}\"/>\n");
+        svg.Append($"<image x=\"{Num(area.Left)}\" y=\"{Num(area.Top)}\" width=\"{Num(area.Width)}\" height=\"{Num(area.Height)}\" ");
+        svg.Append($"preserveAspectRatio=\"none\" xlink:href=\"data:image/png;base64,{Convert.ToBase64String(png.AsSpan())}\"/>\n");
     }
 
     /// <summary>
@@ -552,7 +618,7 @@ public static class QrGenerator
         ps.Append("%%Creator: qr2l\n");
         ps.Append("%%Title: QR Code\n");
         ps.Append($"%%BoundingBox: 0 0 {box} {box}\n");
-        ps.Append($"%%HiResBoundingBox: 0 0 {Ps(size)} {Ps(size)}\n");
+        ps.Append($"%%HiResBoundingBox: 0 0 {Num(size)} {Num(size)}\n");
         ps.Append("%%LanguageLevel: 2\n");
         ps.Append("%%DocumentData: Clean7Bit\n");
         ps.Append("%%Pages: 1\n");
@@ -560,15 +626,15 @@ public static class QrGenerator
 
         // s disegna un modulo quadrato e d uno tondo, a partire dalle coordinate del disegno
         ps.Append("%%BeginProlog\n");
-        ps.Append($"/m {Ps(module)} def\n");
-        ps.Append($"/rd {Ps(module * CirclePixelFactor / 2f)} def\n");
+        ps.Append($"/m {Num(module)} def\n");
+        ps.Append($"/rd {Num(module * CirclePixelFactor / 2f)} def\n");
         ps.Append("/s { moveto m 0 rlineto 0 m rlineto m neg 0 rlineto closepath } bind def\n");
         ps.Append("/d { 2 copy exch rd add exch moveto rd 0 360 arc closepath } bind def\n");
         ps.Append("%%EndProlog\n");
 
         ps.Append("%%BeginSetup\n");
         ps.Append("%%BeginFeature: *PageSize Default\n");
-        ps.Append($"<< /PageSize [{Ps(size)} {Ps(size)}] >> setpagedevice\n");
+        ps.Append($"<< /PageSize [{Num(size)} {Num(size)}] >> setpagedevice\n");
         ps.Append("%%EndFeature\n");
         ps.Append("%%EndSetup\n");
 
@@ -576,8 +642,8 @@ public static class QrGenerator
         ps.Append("gsave\n");
 
         // Le coordinate del disegno crescono verso il basso, quelle PostScript verso l'alto
-        ps.Append($"0 {Ps(size)} translate 1 -1 scale\n");
-        ps.Append($"{PsColor(options.lightColor)} 0 0 {Ps(size)} {Ps(size)} rectfill\n");
+        ps.Append($"0 {Num(size)} translate 1 -1 scale\n");
+        ps.Append($"{PsColor(options.lightColor)} 0 0 {Num(size)} {Num(size)} rectfill\n");
 
         // Un unico tracciato per tutti i moduli, come nel PDF
         ps.Append($"{PsColor(options.darkColor)} newpath\n");
@@ -589,9 +655,9 @@ public static class QrGenerator
                 }
 
                 if (circles && !IsFinderPattern(x, y, modules)) {
-                    ps.Append($"{Ps((x + 0.5f) * module)} {Ps((y + 0.5f) * module)} d\n");
+                    ps.Append($"{Num((x + 0.5f) * module)} {Num((y + 0.5f) * module)} d\n");
                 } else {
-                    ps.Append($"{Ps(x * module)} {Ps(y * module)} s\n");
+                    ps.Append($"{Num(x * module)} {Num(y * module)} s\n");
                 }
             }
         }
@@ -618,24 +684,16 @@ public static class QrGenerator
         using SKBitmap logo = DecodeLogo(logoBytes);
         LogoPlacement placement = PlaceLogo(size, logo.Width, logo.Height);
 
-        float reduction = Math.Min(1f, (float)PostScriptLogoMaxSize / Math.Max(logo.Width, logo.Height));
-        int width = Math.Max(1, (int)Math.Round(logo.Width * reduction));
-        int height = Math.Max(1, (int)Math.Round(logo.Height * reduction));
-
-        using var composed = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
-
-        using (var canvas = new SKCanvas(composed)) {
-            canvas.Clear(ToSkColor(background));
-            using SKImage image = SKImage.FromBitmap(logo);
-            canvas.DrawImage(image, SKRect.Create(0, 0, width, height), new SKSamplingOptions(SKCubicResampler.Mitchell));
-        }
+        using SKBitmap composed = RenderEmbeddedLogo(logo, ToSkColor(background));
+        int width = composed.Width;
+        int height = composed.Height;
 
         SKRect back = placement.Background;
         SKRect area = placement.Image;
 
-        ps.Append($"{PsColor(background)} {Ps(back.Left)} {Ps(back.Top)} {Ps(back.Width)} {Ps(back.Height)} rectfill\n");
+        ps.Append($"{PsColor(background)} {Num(back.Left)} {Num(back.Top)} {Num(back.Width)} {Num(back.Height)} rectfill\n");
         ps.Append("gsave\n");
-        ps.Append($"{Ps(area.Left)} {Ps(area.Top)} translate {Ps(area.Width)} {Ps(area.Height)} scale\n");
+        ps.Append($"{Num(area.Left)} {Num(area.Top)} translate {Num(area.Width)} {Num(area.Height)} scale\n");
 
         // Nello spazio già ribaltato la prima riga dell'immagine finisce in alto
         ps.Append($"{width} {height} 8 [{width} 0 0 {height} 0 0] currentfile /ASCIIHexDecode filter false 3 colorimage\n");
@@ -666,14 +724,38 @@ public static class QrGenerator
         ps.Append("grestore\n");
     }
 
-    private static string Ps(float value)
+    /// <summary>
+    /// Il logo ridisegnato alle dimensioni da incorporare nei formati vettoriali: quelle originali, ridotte se
+    /// superano il limite. Lo sfondo è pieno per il PostScript e trasparente per l'SVG.
+    /// </summary>
+    private static SKBitmap RenderEmbeddedLogo(SKBitmap logo, SKColor background)
+    {
+        float reduction = Math.Min(1f, (float)EmbeddedLogoMaxSize / Math.Max(logo.Width, logo.Height));
+        int width = Math.Max(1, (int)Math.Round(logo.Width * reduction));
+        int height = Math.Max(1, (int)Math.Round(logo.Height * reduction));
+
+        var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
+
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(background);
+
+        using SKImage image = SKImage.FromBitmap(logo);
+        canvas.DrawImage(image, SKRect.Create(0, 0, width, height), new SKSamplingOptions(SKCubicResampler.Mitchell));
+
+        return bitmap;
+    }
+
+    /// <summary>
+    /// Numeri per i formati testuali (SVG e PostScript): al massimo tre decimali, sempre con il punto.
+    /// </summary>
+    private static string Num(float value)
     {
         return value.ToString("0.###", CultureInfo.InvariantCulture);
     }
 
     private static string PsColor(QrColor color)
     {
-        return $"{Ps(color.R / 255f)} {Ps(color.G / 255f)} {Ps(color.B / 255f)} setrgbcolor";
+        return $"{Num(color.R / 255f)} {Num(color.G / 255f)} {Num(color.B / 255f)} setrgbcolor";
     }
 
     private readonly record struct LogoPlacement(SKRect Background, SKRect Image);

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using qr2l.Core;
 using SkiaSharp;
 using Xunit;
@@ -335,6 +336,57 @@ public class QrGeneratorTests
 
         Assert.DoesNotContain("colorimage", without);
         Assert.Contains("colorimage", with);
+    }
+
+    [Fact]
+    public void Generate_Svg_ShouldUseTheChosenColors()
+    {
+        var options = new QrCodeOptions { darkColor = DarkBlue, lightColor = Cream };
+
+        string svg = Encoding.UTF8.GetString(QrGenerator.Generate("Color Test", ExportFormat.Svg, options));
+
+        Assert.Contains("fill=\"#1F3A93\"", svg);
+        Assert.Contains("fill=\"#FFF8E1\"", svg);
+    }
+
+    [Fact]
+    public void Generate_Svg_ShouldEmbedTheLogo()
+    {
+        string without = Encoding.UTF8.GetString(QrGenerator.Generate("Logo Test", ExportFormat.Svg, new QrCodeOptions()));
+        string with = Encoding.UTF8.GetString(QrGenerator.Generate("Logo Test", ExportFormat.Svg, new QrCodeOptions { logo = CreateLogo() }));
+
+        Assert.DoesNotContain("<image", without);
+        Assert.Contains("<image", with);
+        Assert.Contains("data:image/png;base64,", with);
+    }
+
+    [Fact]
+    public void Generate_Svg_WithCircleShape_ShouldDrawDots()
+    {
+        string svg = Encoding.UTF8.GetString(QrGenerator.Generate("Shape Test", ExportFormat.Svg, new QrCodeOptions { shape = PixelShape.Circle }));
+
+        Assert.Contains("a0.4,0.4 0 1,0 0.8,0", svg);
+    }
+
+    [Theory]
+    [InlineData(PixelShape.Square)]
+    [InlineData(PixelShape.Circle)]
+    public void Generate_Svg_ShouldBeWellFormedXml(PixelShape shape)
+    {
+        var options = new QrCodeOptions { shape = shape, logo = CreateLogo() };
+
+        XDocument document = XDocument.Parse(Encoding.UTF8.GetString(QrGenerator.Generate("Xml Test", ExportFormat.Svg, options)));
+
+        Assert.Equal("svg", document.Root?.Name.LocalName);
+    }
+
+    [Fact]
+    public void GenerateSvgString_ShouldMatchTheSvgExport()
+    {
+        string exported = Encoding.UTF8.GetString(QrGenerator.Generate("Same Test", ExportFormat.Svg, new QrCodeOptions { logo = CreateLogo() }));
+        string copied = QrGenerator.GenerateSvgString("Same Test", new QrCodeOptions { logo = CreateLogo() });
+
+        Assert.Equal(exported, copied);
     }
 
     private static byte[] CreateLogo()

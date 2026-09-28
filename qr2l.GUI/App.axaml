@@ -11,4 +11,22 @@
         <mi:MaterialIconStyles />
     </Application.Styles>
 
+    <!-- Bordi dei campi più leggeri di quelli Fluent: il 38% del colore del testo, come i contorni di Material Design -->
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <Color x:Key="FieldBorderColor">#61000000</Color>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <Color x:Key="FieldBorderColor">#61FFFFFF</Color>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="{DynamicResource FieldBorderColor}" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="{DynamicResource FieldBorderColor}" />
+            <SolidColorBrush x:Key="CalendarDatePickerBorderBrush" Color="{DynamicResource FieldBorderColor}" />
+            <SolidColorBrush x:Key="TimePickerButtonBorderBrush" Color="{DynamicResource FieldBorderColor}" />
+        </ResourceDictionary>
+    </Application.Resources>
+
 </Application>

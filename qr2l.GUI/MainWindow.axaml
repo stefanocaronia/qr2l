@@ -1,15 +1,16 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mi="using:Material.Icons.Avalonia"
+        xmlns:local="using:qr2l.GUI"
         x:Class="qr2l.GUI.MainWindow"
         Title="qr2l"
         Icon="/Assets/app.ico"
-        Width="400" Height="640"
+        Width="400" SizeToContent="Height"
         CanResize="False">
 
     <Window.Styles>
-        <!-- Pulsanti della toolbar: solo icona, senza sfondo -->
-        <Style Selector="Button.tool">
+        <!-- Pulsanti con la sola icona, senza sfondo -->
+        <Style Selector="Button.tool, ToggleButton.tool">
             <Setter Property="Width" Value="32" />
             <Setter Property="Height" Value="32" />
             <Setter Property="Padding" Value="0" />
@@ -17,119 +18,259 @@
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
-        <Style Selector="Button.tool mi|MaterialIcon">
-            <Setter Property="Width" Value="20" />
-            <Setter Property="Height" Value="20" />
+        <!-- Spenti: niente riquadro grigio, solo l'icona attenuata -->
+        <Style Selector="Button.tool:disabled /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.tool:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
         </Style>
-        <!-- Pulsanti colore: il contenuto (il campione) riempie tutto il pulsante -->
+        <!-- Modulo acceso: l'icona prende il colore d'accento, senza il riquadro pieno -->
+        <Style Selector="ToggleButton.tool:checked /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ToggleButton.tool:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundPointerOver}" />
+        </Style>
+        <Style Selector="ToggleButton.tool:checked local|Glyph">
+            <Setter Property="Fill" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+        </Style>
+        <!-- Icone: tutte alte uguali, più piccole accanto al testo -->
+        <Style Selector="local|Glyph">
+            <Setter Property="Height" Value="16" />
+        </Style>
+        <Style Selector="local|Glyph.small">
+            <Setter Property="Height" Value="14" />
+        </Style>
+        <Style Selector="local|Glyph:disabled">
+            <Setter Property="Opacity" Value="0.4" />
+        </Style>
+        <!-- Riquadri colore: il colore scelto riempie tutto il pulsante e fa da sfondo a icona e scritta -->
         <Style Selector="Button.swatch">
             <Setter Property="Height" Value="32" />
-            <Setter Property="Padding" Value="2" />
+            <Setter Property="Padding" Value="0" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style Selector="Button.swatch > Border">
+            <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrush}" />
+        </Style>
+        <Style Selector="Button.swatch:pointerover > Border">
+            <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrushPointerOver}" />
+        </Style>
+        <!-- Icona a sinistra della scritta, a 8 di distanza, e la coppia centrata: come nei pulsanti Material -->
+        <Style Selector="Button.swatch StackPanel">
+            <Setter Property="Orientation" Value="Horizontal" />
+            <Setter Property="Spacing" Value="8" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.swatch TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.bar">
             <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" />
             <Setter Property="Padding" Value="6,4" />
         </Style>
-        <!-- Pulsante del tipo di contenuto: sembra un'etichetta finché non ci si passa sopra -->
+        <!-- Pulsanti con menu nella barra di stato: sembrano etichette finché non ci si passa sopra -->
         <Style Selector="Button.mode">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Padding" Value="4,2" />
             <Setter Property="MinHeight" Value="0" />
         </Style>
+        <Style Selector="Grid.form">
+            <Setter Property="ColumnSpacing" Value="6" />
+            <Setter Property="RowSpacing" Value="6" />
+        </Style>
+        <!-- Orari degli eventi: 24 ore, a passi di 5 minuti, larghi quanto basta -->
+        <Style Selector="TimePicker">
+            <Setter Property="ClockIdentifier" Value="24HourClock" />
+            <Setter Property="MinuteIncrement" Value="5" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Width" Value="110" />
+        </Style>
     </Window.Styles>
 
+    <!-- Il Tag di un controllo è la chiave del suo testo nella lingua scelta (vedi ApplyTexts) -->
     <DockPanel x:Name="root">
 
-        <!-- Toolbar -->
+        <!-- Toolbar: le azioni sul codice, e l'aiuto -->
         <Border DockPanel.Dock="Top" Classes="bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="2">
-                    <Button x:Name="saveButton" Classes="tool" Click="OnSaveClick">
-                        <mi:MaterialIcon Kind="ContentSave" Foreground="#2F6FD6" />
+                    <Button x:Name="saveButton" Classes="tool" Tag="tip_save" HotKey="Ctrl+S" Click="OnSaveClick">
+                        <local:Glyph x:Name="saveIcon" Kind="ContentSave" Fill="#2F6FD6" />
                     </Button>
-                    <Button x:Name="copyImageButton" Classes="tool" Click="OnCopyImageClick">
-                        <mi:MaterialIcon Kind="ContentCopy" Foreground="#B0851E" />
+                    <Button x:Name="copyImageButton" Classes="tool" Tag="tip_copy_image" HotKey="Ctrl+Shift+C"
+                            Click="OnCopyImageClick">
+                        <local:Glyph x:Name="copyImageIcon" Kind="ContentCopy" Fill="#B0851E" />
                     </Button>
-                    <Button x:Name="copySvgButton" Classes="tool" Click="OnCopySvgClick">
-                        <mi:MaterialIcon Kind="Svg" Foreground="#2E9E5B" />
+                    <Button x:Name="copySvgButton" Classes="tool" Tag="tip_copy_svg" Click="OnCopySvgClick">
+                        <local:Glyph x:Name="copySvgIcon" Kind="Xml" Fill="#2E9E5B" />
                     </Button>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2">
-                    <ComboBox x:Name="languageSelector" MinWidth="100" MinHeight="0" Height="26" Padding="8,0"
-                              FontSize="12" VerticalAlignment="Center" VerticalContentAlignment="Center"
-                              SelectionChanged="OnLanguageChanged" />
-                    <Button x:Name="themeButton" Classes="tool" Click="OnThemeClick">
-                        <mi:MaterialIcon x:Name="themeIcon" Kind="WeatherNight" Foreground="#6C7AE0" />
-                    </Button>
-                    <Button x:Name="donateButton" Classes="tool" Click="OnDonateClick">
-                        <mi:MaterialIcon Kind="Heart" Foreground="#E0453A" />
-                    </Button>
-                    <Button x:Name="helpButton" Classes="tool">
-                        <mi:MaterialIcon Kind="HelpCircle" Foreground="#2F6FD6" />
-                        <Button.Flyout>
-                            <Flyout Placement="BottomEdgeAlignedRight">
-                                <ScrollViewer MaxWidth="380" MaxHeight="420">
-                                    <TextBlock x:Name="helpText" TextWrapping="Wrap" />
-                                </ScrollViewer>
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                </StackPanel>
+                <Button Grid.Column="2" x:Name="helpButton" Classes="tool" Tag="tip_help">
+                    <local:Glyph Kind="HelpCircle" Fill="#2F6FD6" />
+                    <!-- Help breve: come funziona, esempi da provare, guida completa online -->
+                    <Button.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedRight">
+                            <StackPanel Width="300" Spacing="12">
+                                <TextBlock x:Name="helpIntro" TextWrapping="Wrap" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock x:Name="helpExamplesTitle" FontWeight="SemiBold" />
+                                    <WrapPanel x:Name="helpExamples" />
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <HyperlinkButton x:Name="helpGuide" Padding="0" Click="OnGuideClick" />
+                                    <TextBlock Grid.Column="1" x:Name="helpVersion" FontSize="12" Opacity="0.6"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+                            </StackPanel>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
             </Grid>
         </Border>
 
-        <!-- Barra di stato -->
+        <!-- Barra di stato: a sinistra tipo di contenuto e modulo; a destra preferenze e progetto, che si usano di rado -->
         <Border DockPanel.Dock="Bottom" Classes="bar">
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="2">
                 <!-- Tipo di contenuto: rilevato in automatico, cliccando si sceglie a mano (menu creato nel code-behind) -->
-                <Button x:Name="modeButton" Classes="mode" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="2">
-                        <TextBlock x:Name="modeLabel" VerticalAlignment="Center" />
+                <Button x:Name="modeButton" Classes="mode" Tag="tip_mode" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <StackPanel x:Name="modeShown" Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon x:Name="modeIcon" Width="16" Height="16" />
+                            <TextBlock x:Name="modeLabel" VerticalAlignment="Center" />
+                        </StackPanel>
                         <mi:MaterialIcon Kind="MenuUp" Width="16" Height="16" />
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="1" x:Name="repoButton" Classes="tool" Click="OnRepoClick">
-                    <mi:MaterialIcon Kind="Github" />
+                <!-- Mostra o nasconde il modulo; spento per i tipi che non ne hanno uno -->
+                <ToggleButton Grid.Column="1" x:Name="formButton" Classes="tool" ToolTip.ShowOnDisabled="True"
+                              Click="OnFormButtonClick">
+                    <local:Glyph Kind="FormTextbox" />
+                </ToggleButton>
+                <Button Grid.Column="3" x:Name="languageButton" Classes="mode" Tag="tip_language"
+                        VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <local:Glyph Kind="Web" Classes="small" />
+                        <TextBlock x:Name="languageLabel" VerticalAlignment="Center" />
+                        <mi:MaterialIcon Kind="MenuUp" Width="16" Height="16" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="4" x:Name="themeButton" Classes="tool" Tag="tip_theme" Click="OnThemeClick">
+                    <local:Glyph x:Name="themeIcon" Kind="WeatherNight" />
+                </Button>
+                <Button Grid.Column="5" x:Name="repoButton" Classes="tool" Tag="tip_repo" Click="OnRepoClick">
+                    <local:Glyph Kind="Github" />
+                </Button>
+                <Button Grid.Column="6" x:Name="donateButton" Classes="tool" Tag="tip_donate" Click="OnDonateClick">
+                    <local:Glyph Kind="Heart" Fill="#E0453A" />
                 </Button>
             </Grid>
         </Border>
 
         <!-- Opzioni: colori e logo -->
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,*,2*" ColumnSpacing="6" Margin="6,6,6,0">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="5*,5*,8*" ColumnSpacing="6" Margin="6,6,6,0">
             <!-- I selettori colore si aprono a lato della finestra (vedi code-behind) per non coprire l'anteprima -->
-            <Button x:Name="fgColorButton" Classes="swatch" Click="OnFgColorClick">
-                <Border x:Name="fgSwatch" Background="Black" CornerRadius="3" />
+            <Button x:Name="fgColorButton" Classes="swatch" Tag="tip_fg" Click="OnFgColorClick">
+                <Border x:Name="fgSwatch">
+                    <StackPanel>
+                        <local:Glyph Kind="Qrcode" Classes="small" />
+                        <TextBlock Tag="color_code" />
+                    </StackPanel>
+                </Border>
             </Button>
-            <Button Grid.Column="1" x:Name="bgColorButton" Classes="swatch" Click="OnBgColorClick">
-                <Border x:Name="bgSwatch" Background="White" CornerRadius="3" />
+            <Button Grid.Column="1" x:Name="bgColorButton" Classes="swatch" Tag="tip_bg" Click="OnBgColorClick">
+                <Border x:Name="bgSwatch">
+                    <StackPanel>
+                        <local:Glyph Kind="FormatColorFill" Classes="small" />
+                        <TextBlock Tag="color_background" />
+                    </StackPanel>
+                </Border>
             </Button>
             <Button Grid.Column="2" x:Name="logoButton" Height="32" HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center" Click="OnLogoClick">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon x:Name="logoIcon" Kind="Image" Width="18" Height="18" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <local:Glyph x:Name="logoIcon" Kind="Image" Classes="small" />
                     <TextBlock x:Name="logoLabel" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
         </Grid>
 
-        <!-- Testo da codificare -->
-        <TextBox DockPanel.Dock="Top" x:Name="qrText" Height="96" Margin="6,6,6,0"
+        <!-- Moduli dei tipi con più campi: scrivono nella casella di testo e si aggiornano quando la si modifica -->
+        <Panel x:Name="formHost" DockPanel.Dock="Top" Margin="6,6,6,0" IsVisible="False">
+            <Grid x:Name="wifiForm" Classes="form" IsVisible="False" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+                <TextBox x:Name="wifiSsid" Tag="wifi_ssid" />
+                <TextBox Grid.Column="1" x:Name="wifiPassword" Tag="wifi_password" />
+                <ComboBox Grid.Row="1" x:Name="wifiSecurity" Tag="wifi_security" HorizontalAlignment="Stretch"
+                          SelectedIndex="0">
+                    <ComboBoxItem Content="WPA / WPA2 / WPA3" />
+                    <ComboBoxItem Content="WEP" />
+                </ComboBox>
+                <CheckBox Grid.Row="1" Grid.Column="1" x:Name="wifiHidden" Tag="wifi_hidden" />
+            </Grid>
+
+            <Grid x:Name="mailForm" Classes="form" IsVisible="False" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+                <TextBox x:Name="mailAddress" Tag="mail_address" />
+                <TextBox Grid.Column="1" x:Name="mailSubject" Tag="mail_subject" />
+                <TextBox Grid.Row="1" Grid.ColumnSpan="2" x:Name="mailBody" Tag="field_message" />
+            </Grid>
+
+            <!-- SMS e WhatsApp: stessi campi, cambia solo il segnaposto del numero -->
+            <Grid x:Name="messageForm" Classes="form" IsVisible="False" RowDefinitions="Auto,Auto">
+                <TextBox x:Name="messageNumber" Tag="field_phone" />
+                <TextBox Grid.Row="1" x:Name="messageText" Tag="field_message" />
+            </Grid>
+
+            <Grid x:Name="contactForm" Classes="form" IsVisible="False" ColumnDefinitions="*,*"
+                  RowDefinitions="Auto,Auto,Auto">
+                <TextBox x:Name="contactFirstName" Tag="contact_first" />
+                <TextBox Grid.Column="1" x:Name="contactLastName" Tag="contact_last" />
+                <TextBox Grid.Row="1" x:Name="contactPhone" Tag="contact_phone" />
+                <TextBox Grid.Row="1" Grid.Column="1" x:Name="contactEmail" Tag="contact_email" />
+                <TextBox Grid.Row="2" x:Name="contactOrganization" Tag="contact_org" />
+                <TextBox Grid.Row="2" Grid.Column="1" x:Name="contactWebsite" Tag="contact_web" />
+            </Grid>
+
+            <Grid x:Name="eventForm" Classes="form" IsVisible="False" ColumnDefinitions="Auto,*,Auto"
+                  RowDefinitions="Auto,Auto,Auto,Auto">
+                <Grid Grid.ColumnSpan="3" Classes="form" ColumnDefinitions="*,*">
+                    <TextBox x:Name="eventTitle" Tag="event_title" />
+                    <TextBox Grid.Column="1" x:Name="eventLocation" Tag="event_location" />
+                </Grid>
+                <Grid Grid.Row="1" Grid.ColumnSpan="3" Classes="form" ColumnDefinitions="*,Auto">
+                    <TextBox x:Name="eventDescription" Tag="event_description" />
+                    <CheckBox Grid.Column="1" x:Name="eventAllDay" Tag="event_all_day" />
+                </Grid>
+                <TextBlock Grid.Row="2" Tag="event_start" VerticalAlignment="Center" />
+                <CalendarDatePicker Grid.Row="2" Grid.Column="1" x:Name="eventStartDate" HorizontalAlignment="Stretch" />
+                <TimePicker Grid.Row="2" Grid.Column="2" x:Name="eventStartTime" />
+                <TextBlock Grid.Row="3" Tag="event_end" VerticalAlignment="Center" />
+                <CalendarDatePicker Grid.Row="3" Grid.Column="1" x:Name="eventEndDate" HorizontalAlignment="Stretch" />
+                <TimePicker Grid.Row="3" Grid.Column="2" x:Name="eventEndTime" />
+            </Grid>
+        </Panel>
+
+        <!-- Testo da codificare: sempre visibile, anche sotto un modulo, di cui mostra il risultato -->
+        <TextBox x:Name="qrText" DockPanel.Dock="Top" Height="96" Margin="6,6,6,0"
                  AcceptsReturn="True" TextWrapping="Wrap"
                  FontFamily="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace"
-                 TextChanged="OnTextChanged" />
+                 TextChanging="OnTextChanging" />
 
-        <!-- Anteprima: lo sfondo prende il colore chiaro del QR, così non c'è cornice attorno al codice -->
-        <Border x:Name="previewHost" Margin="6" CornerRadius="4" Background="Transparent">
-            <Panel>
-                <TextBlock x:Name="previewPlaceholder" HorizontalAlignment="Center" VerticalAlignment="Center"
-                           FontStyle="Italic" Opacity="0.6" />
-                <Image x:Name="preview" Stretch="Uniform" />
-            </Panel>
-        </Border>
+        <!-- Anteprima quadrata: la finestra si allunga con il modulo invece di stringerla.
+             Lo sfondo prende il colore chiaro del QR, così non c'è cornice attorno al codice -->
+        <local:SquarePanel Margin="6">
+            <Border x:Name="previewHost" CornerRadius="4" Background="Transparent">
+                <Panel>
+                    <TextBlock x:Name="previewPlaceholder" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               FontStyle="Italic" Opacity="0.6" />
+                    <Image x:Name="preview" Stretch="Uniform" />
+                </Panel>
+            </Border>
+        </local:SquarePanel>
 
     </DockPanel>
 </Window>

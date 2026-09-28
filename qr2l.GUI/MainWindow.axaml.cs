@@ -1,14 +1,18 @@
 using System.Diagnostics;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Material.Icons;
+using Material.Icons.Avalonia;
 using qr2l.Core;
 using AvaloniaBitmap = Avalonia.Media.Imaging.Bitmap;
 using AvaloniaColor = Avalonia.Media.Color;
@@ -22,6 +26,7 @@ public partial class MainWindow : Window
     private const int RefreshDelayMs = 100;
     private const string DonateUrl = "https://paypal.me/stefanocaronia";
     private const string RepoUrl = "https://github.com/stefanocaronia/qr2l";
+    private const string FormSetting = "form";
 
     private readonly DispatcherTimer debounceTimer;
     private readonly ColorView fgColorView;
@@ -29,9 +34,7 @@ public partial class MainWindow : Window
     private readonly Flyout fgColorFlyout;
     private readonly Flyout bgColorFlyout;
     private byte[]? pngData;
-    private string? svgData;
     private byte[]? logo;
-    private bool suppressLanguageEvent;
 
     // Tipi di contenuto nel menu della barra di stato, nell'ordine in cui compaiono
     private static readonly PayloadMode[] SelectableModes = [
@@ -49,9 +52,17 @@ public partial class MainWindow : Window
     ];
 
     private readonly MenuFlyout modeMenu = new() { Placement = PlacementMode.TopEdgeAlignedLeft };
+    private readonly MenuFlyout languageMenu = new() { Placement = PlacementMode.TopEdgeAlignedRight };
     private PayloadMode selectedMode = PayloadMode.Auto;
     private PayloadMode detectedMode = PayloadMode.Text;
     private bool invalidContent;
+
+    // Modulo mostrato (null se nessuno) e stato della sincronizzazione con la casella di testo
+    private PayloadMode? visibleForm;
+    private bool showForm = UserSettings.Get(FormSetting) != "off";
+    private bool syncing;
+    private bool textEditedByUser;
+    private TimeSpan eventDuration = TimeSpan.FromHours(1);
 
     #endregion
 
@@ -69,8 +80,15 @@ public partial class MainWindow : Window
         fgColorFlyout = CreateColorFlyout(fgColorView);
         bgColorFlyout = CreateColorFlyout(bgColorView);
         modeButton.Flyout = modeMenu;
+        languageButton.Flyout = languageMenu;
+        BuildLanguageMenu();
+        formButton.IsChecked = showForm;
+        PaintSwatch(fgSwatch, fgColorView.Color);
+        PaintSwatch(bgSwatch, bgColorView.Color);
 
-        PopulateLanguages();
+        WireForms();
+        Resized += (_, _) => KeepOnScreen();
+
         ApplyLanguage();
         ApplyThemeIcon();
         RefreshButtonStates();
@@ -78,8 +96,10 @@ public partial class MainWindow : Window
 
     #region Generation
 
-    private void OnTextChanged(object? sender, TextChangedEventArgs e)
+    private void OnTextChanging(object? sender, TextChangingEventArgs e)
     {
+        // TextChanging arriva subito (TextChanged invece è accodato): solo qui si sa se ha scritto l'utente o un modulo
+        textEditedByUser |= !syncing;
         debounceTimer.Stop();
         debounceTimer.Start();
     }
@@ -126,14 +146,28 @@ public partial class MainWindow : Window
 
     private void OnColorChanged(object? sender, ColorChangedEventArgs e)
     {
-        fgSwatch.Background = new SolidColorBrush(fgColorView.Color);
-        bgSwatch.Background = new SolidColorBrush(bgColorView.Color);
+        PaintSwatch(fgSwatch, fgColorView.Color);
+        PaintSwatch(bgSwatch, bgColorView.Color);
         Generate();
     }
 
+    /// <summary>
+    /// Il riquadro prende il colore scelto; icona e scritta il bianco o il nero, quello che si legge meglio.
+    /// </summary>
+    private static void PaintSwatch(Border swatch, AvaloniaColor color)
+    {
+        swatch.Background = new SolidColorBrush(color);
+        TextElement.SetForeground(swatch, color.R * 299 + color.G * 587 + color.B * 114 > 128_000 ? Brushes.Black : Brushes.White);
+    }
+
+    /// <summary>
+    /// Il testo da codificare: la casella è l'unica fonte, i moduli ci scrivono dentro.
+    /// </summary>
+    private string CurrentText => qrText.Text?.Trim() ?? string.Empty;
+
     private void Generate()
     {
-        string text = qrText.Text?.Trim() ?? string.Empty;
+        string text = CurrentText;
 
         detectedMode = text.Length == 0 ? PayloadMode.Text : QrGenerator.DetectPayloadMode(text);
         invalidContent = false;
@@ -143,7 +177,6 @@ public partial class MainWindow : Window
         } else {
             try {
                 pngData = QrGenerator.Generate(text, ExportFormat.Png, CreateOptions());
-                svgData = QrGenerator.GenerateSvgString(text, CreateOptions());
 
                 (preview.Source as IDisposable)?.Dispose();
                 using var stream = new MemoryStream(pngData);
@@ -159,6 +192,7 @@ public partial class MainWindow : Window
         UpdateModeLabel();
         UpdatePlaceholder();
         RefreshButtonStates();
+        RefreshForm();
     }
 
     private QrCodeOptions CreateOptions()
@@ -188,7 +222,6 @@ public partial class MainWindow : Window
         preview.Source = null;
         previewHost.Background = Brushes.Transparent;
         pngData = null;
-        svgData = null;
     }
 
     private void RefreshButtonStates()
@@ -197,8 +230,24 @@ public partial class MainWindow : Window
 
         saveButton.IsEnabled = hasData;
         copyImageButton.IsEnabled = hasData;
-        copySvgButton.IsEnabled = svgData != null;
+        copySvgButton.IsEnabled = hasData;
         previewPlaceholder.IsVisible = !hasData;
+    }
+
+    /// <summary>
+    /// Quando il modulo allunga la finestra, la si alza quanto basta per non farla uscire dallo schermo.
+    /// </summary>
+    private void KeepOnScreen()
+    {
+        if (Screens.ScreenFromWindow(this) is not { } screen || FrameSize is not { } frame) {
+            return;
+        }
+
+        int overflow = Position.Y + (int)Math.Ceiling(frame.Height * DesktopScaling) - screen.WorkingArea.Bottom;
+
+        if (overflow > 0) {
+            Position = new PixelPoint(Position.X, Math.Max(screen.WorkingArea.Y, Position.Y - overflow));
+        }
     }
 
     #endregion
@@ -206,47 +255,123 @@ public partial class MainWindow : Window
     #region Content type
 
     /// <summary>
-    /// In automatico l'etichetta mostra il tipo rilevato; dopo una scelta manuale, il tipo scelto.
+    /// In automatico l'etichetta mostra il tipo rilevato, attenuato; dopo una scelta manuale, il tipo scelto a piena intensità.
     /// </summary>
     private void UpdateModeLabel()
     {
-        modeLabel.Text = selectedMode == PayloadMode.Auto
-            ? $"{ModeName(detectedMode)} · {ModeName(PayloadMode.Auto)}"
-            : ModeName(selectedMode);
+        bool automatic = selectedMode == PayloadMode.Auto;
+        PayloadMode shown = automatic ? detectedMode : selectedMode;
+
+        modeLabel.Text = ModeName(shown);
+        SetModeIcon(modeIcon, shown);
+        modeShown.Opacity = automatic ? 0.55 : 1.0;
     }
 
+    /// <summary>
+    /// Le voci si creano solo quando cambia la lingua: rifarle durante un clic impedirebbe al menu di chiudersi.
+    /// </summary>
     private void BuildModeMenu()
     {
         modeMenu.Items.Clear();
 
         foreach (PayloadMode mode in SelectableModes) {
-            var item = new MenuItem {
-                Header = ModeName(mode),
-                Tag = mode,
-                ToggleType = MenuItemToggleType.Radio,
-                GroupName = "mode",
-                IsChecked = mode == selectedMode
-            };
-
-            item.Click += OnModeSelected;
-            modeMenu.Items.Add(item);
+            var icon = new MaterialIcon { Width = 16, Height = 16 };
+            SetModeIcon(icon, mode);
+            AddChoice(modeMenu, ModeName(mode), mode, () => SelectMode(mode), icon);
 
             // L'automatico resta separato dai tipi specifici
             if (mode == PayloadMode.Auto) {
                 modeMenu.Items.Add(new Separator());
             }
         }
+
+        CheckChoice(modeMenu, selectedMode);
     }
 
-    private void OnModeSelected(object? sender, RoutedEventArgs e)
+    /// <summary>
+    /// Voce di un menu a scelta singola. L'icona va nell'intestazione: la colonna delle icone ha già il segno di scelta.
+    /// </summary>
+    private static void AddChoice(MenuFlyout menu, string text, object value, Action choose, Control? icon = null)
     {
-        if (sender is not MenuItem { Tag: PayloadMode mode }) {
-            return;
+        var item = new MenuItem {
+            Header = icon == null ? text : new StackPanel {
+                Orientation = Orientation.Horizontal,
+                Spacing = 8,
+                Children = { icon, new TextBlock { Text = text } }
+            },
+            Tag = value,
+            ToggleType = MenuItemToggleType.Radio
+        };
+
+        // Con icona e testo nell'intestazione, il nome per i lettori di schermo va dato a parte
+        AutomationProperties.SetName(item, text);
+        item.Click += (_, _) => choose();
+        menu.Items.Add(item);
+    }
+
+    private static void CheckChoice(MenuFlyout menu, object value)
+    {
+        foreach (MenuItem item in menu.Items.OfType<MenuItem>()) {
+            item.IsChecked = Equals(item.Tag, value);
+        }
+    }
+
+    /// <summary>
+    /// Ogni tipo di contenuto ha la sua icona colorata, nel menu e nella barra di stato.
+    /// Qui le icone restano nel loro quadrato Material, così hanno tutte le stesse proporzioni.
+    /// </summary>
+    private static void SetModeIcon(MaterialIcon icon, PayloadMode mode)
+    {
+        (MaterialIconKind kind, string color) = mode switch {
+            PayloadMode.Auto => (MaterialIconKind.AutoFix, "#8E5BD0"),
+            PayloadMode.Url => (MaterialIconKind.Link, "#2F6FD6"),
+            PayloadMode.Mail => (MaterialIconKind.Email, "#E0453A"),
+            PayloadMode.Phone => (MaterialIconKind.Phone, "#2E9E5B"),
+            PayloadMode.SMS => (MaterialIconKind.MessageText, "#1E9EA8"),
+            PayloadMode.WhatsApp => (MaterialIconKind.Whatsapp, "#25A55F"),
+            PayloadMode.WiFi => (MaterialIconKind.Wifi, "#6C7AE0"),
+            PayloadMode.Geolocation => (MaterialIconKind.MapMarker, "#E07B2E"),
+            PayloadMode.ContactData => (MaterialIconKind.CardAccountDetails, "#B0851E"),
+            PayloadMode.Event => (MaterialIconKind.CalendarMonth, "#D14B8F"),
+            var _ => (MaterialIconKind.Text, "#7A7F87")
+        };
+
+        icon.Kind = kind;
+        icon.Foreground = SolidColorBrush.Parse(color);
+    }
+
+    /// <summary>
+    /// Cambia tipo di contenuto. Chi sceglie un tipo con più campi vuole compilarli: il modulo si apre.
+    /// </summary>
+    private void SelectMode(PayloadMode mode)
+    {
+        selectedMode = mode;
+
+        if (HasForm(mode) && !showForm) {
+            SetShowForm(true);
         }
 
-        selectedMode = mode;
-        BuildModeMenu();
+        CheckChoice(modeMenu, mode);
+        UpdateTextPlaceholder();
         Generate();
+    }
+
+    /// <summary>
+    /// Il segnaposto della casella mostra il formato atteso dal tipo scelto: la sintassi compare solo quando serve.
+    /// </summary>
+    private void UpdateTextPlaceholder()
+    {
+        qrText.PlaceholderText = selectedMode switch {
+            PayloadMode.Url => "https://example.com",
+            PayloadMode.Mail => Localization.T("ph_mail"),
+            PayloadMode.Phone => Localization.T("ph_phone"),
+            PayloadMode.SMS => Localization.T("ph_sms"),
+            PayloadMode.WhatsApp => Localization.T("ph_whatsapp"),
+            PayloadMode.Geolocation => Localization.T("ph_geo"),
+            PayloadMode.ContactData => Localization.T("ph_contact"),
+            PayloadMode.Event => Localization.T("ph_event"),
+            var _ => Localization.T("placeholder")
+        };
     }
 
     private static string ModeName(PayloadMode mode)
@@ -269,11 +394,298 @@ public partial class MainWindow : Window
 
     #endregion
 
+    #region Forms
+
+    private static bool HasForm(PayloadMode mode)
+    {
+        return mode is PayloadMode.WiFi or PayloadMode.Mail or PayloadMode.SMS or PayloadMode.WhatsApp
+            or PayloadMode.ContactData or PayloadMode.Event;
+    }
+
+    /// <summary>
+    /// Ogni modifica a un campo riscrive subito il testo; cambiando l'inizio di un evento, la fine lo segue.
+    /// </summary>
+    private void WireForms()
+    {
+        foreach (TextBox field in formHost.GetLogicalDescendants().OfType<TextBox>()) {
+            field.TextChanging += (_, _) => OnFormEdited();
+        }
+
+        wifiSecurity.SelectionChanged += (_, _) => OnFormEdited();
+        wifiHidden.IsCheckedChanged += (_, _) => OnFormEdited();
+        eventAllDay.IsCheckedChanged += (_, _) => OnAllDayChanged();
+        eventStartTime.SelectedTimeChanged += (_, _) => OnEventStartEdited();
+        eventEndTime.SelectedTimeChanged += (_, _) => OnEventEndEdited();
+        WatchDate(eventStartDate, OnEventStartEdited);
+        WatchDate(eventEndDate, OnEventEndEdited);
+    }
+
+    /// <summary>
+    /// La data si segue dalla proprietà, che cambia subito: SelectedDateChanged a volte arriva in ritardo.
+    /// </summary>
+    private static void WatchDate(CalendarDatePicker picker, Action changed)
+    {
+        picker.PropertyChanged += (_, e) => {
+            if (e.Property == CalendarDatePicker.SelectedDateProperty) {
+                changed();
+            }
+        };
+    }
+
+    private void OnFormButtonClick(object? sender, RoutedEventArgs e)
+    {
+        SetShowForm(formButton.IsChecked == true);
+        RefreshForm();
+    }
+
+    private void SetShowForm(bool value)
+    {
+        showForm = value;
+        formButton.IsChecked = value;
+        UserSettings.Set(FormSetting, value ? "on" : "off");
+    }
+
+    /// <summary>
+    /// Mostra il modulo del tipo corrente, scelto o rilevato, se ne ha uno e non è nascosto.
+    /// Il modulo si riempie dal testo quando compare e ogni volta che il testo viene modificato a mano.
+    /// </summary>
+    private void RefreshForm()
+    {
+        PayloadMode type = selectedMode == PayloadMode.Auto ? detectedMode : selectedMode;
+        bool available = HasForm(type);
+        PayloadMode? form = available && showForm ? type : null;
+
+        formButton.IsEnabled = available;
+        ToolTip.SetTip(formButton, Localization.T(available ? "tip_form" : "tip_form_none"));
+
+        if (form != visibleForm) {
+            visibleForm = form;
+            ShowForm();
+            FillForm(true);
+        } else if (textEditedByUser) {
+            FillForm(false);
+        }
+
+        textEditedByUser = false;
+    }
+
+    private void ShowForm()
+    {
+        formHost.IsVisible = visibleForm != null;
+        wifiForm.IsVisible = visibleForm == PayloadMode.WiFi;
+        mailForm.IsVisible = visibleForm == PayloadMode.Mail;
+        messageForm.IsVisible = visibleForm is PayloadMode.SMS or PayloadMode.WhatsApp;
+        contactForm.IsVisible = visibleForm == PayloadMode.ContactData;
+        eventForm.IsVisible = visibleForm == PayloadMode.Event;
+
+        // WhatsApp vuole il numero con il prefisso internazionale
+        messageNumber.Tag = visibleForm == PayloadMode.WhatsApp ? "field_intl_phone" : "field_phone";
+        ApplyText(messageNumber);
+    }
+
+    /// <summary>
+    /// Riporta il testo nei campi. Se il testo non si legge i campi restano com'erano,
+    /// tranne quando il modulo è appena comparso o il testo è vuoto: allora ripartono da zero.
+    /// </summary>
+    private void FillForm(bool reset)
+    {
+        string text = CurrentText;
+        reset |= text.Length == 0;
+        syncing = true;
+
+        switch (visibleForm) {
+            case PayloadMode.WiFi when Payloads.TryParseWiFi(text, out WiFiNetwork network) || reset:
+                SetWiFi(network);
+                break;
+
+            case PayloadMode.Mail when Payloads.TryParseMail(text, out MailMessage mail) || reset:
+                SetMail(mail);
+                break;
+
+            case PayloadMode.SMS when Payloads.TryParseSms(text, out TextMessage sms) || reset:
+                SetMessage(sms);
+                break;
+
+            case PayloadMode.WhatsApp when Payloads.TryParseWhatsApp(text, out TextMessage message) || reset:
+                SetMessage(message);
+                break;
+
+            case PayloadMode.ContactData when Payloads.TryParseContact(text, out ContactCard card) || reset:
+                SetContact(card);
+                break;
+
+            case PayloadMode.Event when Payloads.TryParseEvent(text, out CalendarEntry entry):
+                SetEvent(entry);
+                break;
+
+            case PayloadMode.Event when reset:
+                SetEvent(NewEvent());
+                break;
+        }
+
+        syncing = false;
+    }
+
+    /// <summary>
+    /// Un campo modificato dall'utente riscrive il testo nel formato completo del tipo.
+    /// </summary>
+    private void OnFormEdited()
+    {
+        if (syncing || visibleForm is not { } form) {
+            return;
+        }
+
+        syncing = true;
+
+        qrText.Text = form switch {
+            PayloadMode.WiFi => Payloads.BuildWiFi(new WiFiNetwork(
+                Field(wifiSsid),
+                Field(wifiPassword),
+                wifiSecurity.SelectedIndex == 1 ? WiFiAuthenticationType.WEP : WiFiAuthenticationType.WPA,
+                wifiHidden.IsChecked == true)),
+            PayloadMode.Mail => Payloads.BuildMail(new MailMessage(Field(mailAddress), Field(mailSubject), Field(mailBody))),
+            PayloadMode.SMS => Payloads.BuildSms(new TextMessage(Field(messageNumber), Field(messageText))),
+            PayloadMode.WhatsApp => Payloads.BuildWhatsApp(new TextMessage(Field(messageNumber), Field(messageText))),
+            PayloadMode.ContactData => Payloads.BuildContact(new ContactCard(
+                Field(contactFirstName),
+                Field(contactLastName),
+                Field(contactPhone),
+                Field(contactEmail),
+                Field(contactOrganization),
+                Field(contactWebsite))),
+            var _ => Payloads.BuildEvent(new CalendarEntry(
+                Field(eventTitle),
+                Field(eventDescription),
+                Field(eventLocation),
+                EventStart,
+                EventEnd,
+                eventAllDay.IsChecked == true))
+        };
+
+        syncing = false;
+    }
+
+    private static string Field(TextBox field)
+    {
+        return field.Text?.Trim() ?? string.Empty;
+    }
+
+    private void SetWiFi(WiFiNetwork network)
+    {
+        wifiSsid.Text = network.Ssid;
+        wifiPassword.Text = network.Password;
+        wifiSecurity.SelectedIndex = network.Authentication == WiFiAuthenticationType.WEP ? 1 : 0;
+        wifiHidden.IsChecked = network.Hidden;
+    }
+
+    private void SetMail(MailMessage mail)
+    {
+        mailAddress.Text = mail.Address;
+        mailSubject.Text = mail.Subject;
+        mailBody.Text = mail.Body;
+    }
+
+    private void SetMessage(TextMessage message)
+    {
+        messageNumber.Text = message.Number;
+        messageText.Text = message.Message;
+    }
+
+    private void SetContact(ContactCard card)
+    {
+        contactFirstName.Text = card.FirstName;
+        contactLastName.Text = card.LastName;
+        contactPhone.Text = card.Phone;
+        contactEmail.Text = card.Email;
+        contactOrganization.Text = card.Organization;
+        contactWebsite.Text = card.Website;
+    }
+
+    private DateTime EventStart => Moment(eventStartDate, eventStartTime);
+
+    private DateTime EventEnd => Moment(eventEndDate, eventEndTime);
+
+    private static DateTime Moment(CalendarDatePicker date, TimePicker time)
+    {
+        return (date.SelectedDate ?? DateTime.Today).Date + (time.SelectedTime ?? TimeSpan.Zero);
+    }
+
+    private static TimeSpan Duration(DateTime start, DateTime end)
+    {
+        return end > start ? end - start : TimeSpan.Zero;
+    }
+
+    /// <summary>
+    /// Un evento nuovo parte dalla prossima ora piena e dura un'ora.
+    /// </summary>
+    private static CalendarEntry NewEvent()
+    {
+        DateTime start = DateTime.Today.AddHours(DateTime.Now.Hour + 1);
+        return new CalendarEntry(string.Empty, string.Empty, string.Empty, start, start.AddHours(1), false);
+    }
+
+    private void SetEvent(CalendarEntry entry)
+    {
+        eventTitle.Text = entry.Title;
+        eventLocation.Text = entry.Location;
+        eventDescription.Text = entry.Description;
+        eventAllDay.IsChecked = entry.AllDay;
+        eventStartDate.SelectedDate = entry.Start.Date;
+        eventEndDate.SelectedDate = entry.End.Date;
+
+        // Per un evento di tutto il giorno gli orari restano quelli di prima, pronti se si toglie la spunta
+        if (!entry.AllDay) {
+            eventStartTime.SelectedTime = entry.Start.TimeOfDay;
+            eventEndTime.SelectedTime = entry.End.TimeOfDay;
+        }
+
+        eventDuration = Duration(entry.Start, entry.End);
+    }
+
+    /// <summary>
+    /// Spostando l'inizio, la fine lo segue mantenendo la durata, come nei calendari.
+    /// </summary>
+    private void OnEventStartEdited()
+    {
+        if (syncing) {
+            return;
+        }
+
+        syncing = true;
+        DateTime end = EventStart + eventDuration;
+        eventEndDate.SelectedDate = end.Date;
+        eventEndTime.SelectedTime = end.TimeOfDay;
+        syncing = false;
+
+        OnFormEdited();
+    }
+
+    private void OnEventEndEdited()
+    {
+        if (syncing) {
+            return;
+        }
+
+        eventDuration = Duration(EventStart, EventEnd);
+        OnFormEdited();
+    }
+
+    private void OnAllDayChanged()
+    {
+        bool timed = eventAllDay.IsChecked != true;
+
+        eventStartTime.IsVisible = timed;
+        eventEndTime.IsVisible = timed;
+        OnFormEdited();
+    }
+
+    #endregion
+
     #region Actions
 
     private async void OnSaveClick(object? sender, RoutedEventArgs e)
     {
-        string text = qrText.Text?.Trim() ?? string.Empty;
+        string text = CurrentText;
 
         if (text.Length == 0) {
             return;
@@ -298,6 +710,7 @@ public partial class MainWindow : Window
             byte[] data = QrGenerator.Generate(text, format, CreateOptions());
             await using Stream stream = await file.OpenWriteAsync();
             await stream.WriteAsync(data);
+            FlashDone(saveIcon, MaterialIconKind.ContentSave);
         } catch (Exception ex) {
             await ShowMessageAsync(Localization.T("err_title"), $"{Localization.T("err_export")} {format}: {ex.Message}");
         }
@@ -322,24 +735,36 @@ public partial class MainWindow : Window
             using var stream = new MemoryStream(pngData);
             using var bitmap = new AvaloniaBitmap(stream);
             await Clipboard.SetBitmapAsync(bitmap);
-            await ShowMessageAsync(Localization.T("msg_copied_image_title"), Localization.T("msg_copied_image"));
+            FlashDone(copyImageIcon, MaterialIconKind.ContentCopy);
         } catch (Exception ex) {
             await ShowMessageAsync(Localization.T("err_title"), $"{Localization.T("err_copy_image")} {ex.Message}");
         }
     }
 
+    /// <summary>
+    /// L'SVG si genera solo quando serve, invece che a ogni tasto premuto.
+    /// </summary>
     private async void OnCopySvgClick(object? sender, RoutedEventArgs e)
     {
-        if (svgData == null || Clipboard == null) {
+        if (pngData == null || Clipboard == null) {
             return;
         }
 
         try {
-            await Clipboard.SetTextAsync(svgData);
-            await ShowMessageAsync(Localization.T("msg_copied_svg_title"), Localization.T("msg_copied_svg"));
+            await Clipboard.SetTextAsync(QrGenerator.GenerateSvgString(CurrentText, CreateOptions()));
+            FlashDone(copySvgIcon, MaterialIconKind.Xml);
         } catch (Exception ex) {
             await ShowMessageAsync(Localization.T("err_title"), $"{Localization.T("err_copy_svg")} {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Conferma senza finestre da chiudere: l'icona del pulsante diventa per un attimo una spunta.
+    /// </summary>
+    private static void FlashDone(Glyph icon, MaterialIconKind kind)
+    {
+        icon.Kind = MaterialIconKind.Check;
+        DispatcherTimer.RunOnce(() => icon.Kind = kind, TimeSpan.FromSeconds(1.2));
     }
 
     private async void OnLogoClick(object? sender, RoutedEventArgs e)
@@ -405,36 +830,14 @@ public partial class MainWindow : Window
 
     #region Localization and theme
 
-    private sealed record LanguageItem(string Code, string Name)
+    private void BuildLanguageMenu()
     {
-        public override string ToString()
-        {
-            return Name;
+        foreach ((string code, string name) in Localization.LanguageNames) {
+            AddChoice(languageMenu, name, code, () => {
+                Localization.SetLanguage(code);
+                ApplyLanguage();
+            });
         }
-    }
-
-    private void PopulateLanguages()
-    {
-        suppressLanguageEvent = true;
-
-        List<LanguageItem> items = Localization.LanguageNames
-            .Select(pair => new LanguageItem(pair.Key, pair.Value))
-            .ToList();
-
-        languageSelector.ItemsSource = items;
-        languageSelector.SelectedItem = items.FirstOrDefault(item => item.Code == Localization.CurrentLanguage);
-
-        suppressLanguageEvent = false;
-    }
-
-    private void OnLanguageChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (suppressLanguageEvent || languageSelector.SelectedItem is not LanguageItem item) {
-            return;
-        }
-
-        Localization.SetLanguage(item.Code);
-        ApplyLanguage();
     }
 
     /// <summary>
@@ -442,26 +845,53 @@ public partial class MainWindow : Window
     /// </summary>
     private void ApplyLanguage()
     {
-        ToolTip.SetTip(saveButton, Localization.T("tip_save"));
-        ToolTip.SetTip(copyImageButton, Localization.T("tip_copy_image"));
-        ToolTip.SetTip(copySvgButton, Localization.T("tip_copy_svg"));
-        ToolTip.SetTip(donateButton, Localization.T("tip_donate"));
-        ToolTip.SetTip(helpButton, Localization.T("tip_help"));
-        ToolTip.SetTip(languageSelector, Localization.T("tip_language"));
-        ToolTip.SetTip(themeButton, Localization.T("tip_theme"));
-        ToolTip.SetTip(repoButton, Localization.T("tip_repo"));
-        ToolTip.SetTip(fgColorButton, Localization.T("tip_fg"));
-        ToolTip.SetTip(bgColorButton, Localization.T("tip_bg"));
+        foreach (Control control in root.GetLogicalDescendants().OfType<Control>()) {
+            ApplyText(control);
+        }
+
         ToolTip.SetTip(qrText, Localization.T("tip_text"));
-        ToolTip.SetTip(modeButton, Localization.T("tip_mode"));
+        languageLabel.Text = Localization.CurrentLanguage.ToUpperInvariant();
 
-        qrText.PlaceholderText = Localization.T("placeholder");
-        helpText.Text = BuildHelpText();
-
+        CheckChoice(languageMenu, Localization.CurrentLanguage);
         BuildModeMenu();
+        UpdateTextPlaceholder();
+        ApplyHelp();
         UpdateModeLabel();
         UpdatePlaceholder();
         ApplyLogoState();
+        RefreshForm();
+    }
+
+    /// <summary>
+    /// Il Tag di un controllo è la chiave del suo testo: segnaposto per i campi, testo per etichette e caselle,
+    /// suggerimento per il resto. I pulsanti con una scorciatoia la mostrano nel suggerimento.
+    /// </summary>
+    private static void ApplyText(Control control)
+    {
+        if (control.Tag is not string key) {
+            return;
+        }
+
+        string text = Localization.T(key);
+
+        switch (control) {
+            case TextBox field:
+                field.PlaceholderText = text;
+                ToolTip.SetTip(field, text);
+                break;
+
+            case CheckBox check:
+                check.Content = text;
+                break;
+
+            case TextBlock label:
+                label.Text = text;
+                break;
+
+            default:
+                ToolTip.SetTip(control, control is Button { HotKey: { } hotKey } ? $"{text} ({hotKey})" : text);
+                break;
+        }
     }
 
     private void ApplyLogoState()
@@ -477,36 +907,52 @@ public partial class MainWindow : Window
     {
         // In tema scuro si mostra il sole (per passare al chiaro), e viceversa
         themeIcon.Kind = App.IsDark ? MaterialIconKind.WhiteBalanceSunny : MaterialIconKind.WeatherNight;
-        themeIcon.Foreground = App.IsDark ? Brushes.Goldenrod : new SolidColorBrush(AvaloniaColor.Parse("#6C7AE0"));
+        themeIcon.Fill = App.IsDark ? Brushes.Goldenrod : SolidColorBrush.Parse("#6C7AE0");
     }
 
-    private static string BuildHelpText()
-    {
-        string[] lines = [
-            $"*** {Project.Title} ***",
-            "",
-            $"- {Localization.T("help_p1")}",
-            $"- {Localization.T("help_p2")}",
-            $"- {Localization.T("help_p3")}",
-            "",
-            Localization.T("help_p4"),
-            Localization.T("help_p5"),
-            "",
-            Localization.T("help_formats"),
-            $"• {Localization.T("fmt_url")}: http://, https://, ftp://, www., domain.com",
-            $"• {Localization.T("fmt_mail")}: user@domain.com;subject;body",
-            $"• {Localization.T("fmt_phone")}: +1234567890",
-            $"• {Localization.T("fmt_sms")}: 1234567890;message",
-            $"• {Localization.T("fmt_whatsapp")}: +1234567890;message",
-            $"• {Localization.T("fmt_wifi")}: WIFI:NetworkName;password",
-            $"• {Localization.T("fmt_geo")}: 45.4642,9.1900",
-            $"• {Localization.T("fmt_contact")}: FirstName;LastName;Phone;Email",
-            $"• {Localization.T("fmt_event")}: Title;Description;Location;StartDate;EndDate",
-            "",
-            Localization.T("help_note")
-        ];
+    #endregion
 
-        return string.Join(Environment.NewLine, lines);
+    #region Help
+
+    /// <summary>
+    /// Help breve: due righe su come funziona, esempi cliccabili che riempiono il contenuto,
+    /// il link alla guida completa e la versione.
+    /// </summary>
+    private void ApplyHelp()
+    {
+        helpIntro.Text = Localization.T("help_intro");
+        helpExamplesTitle.Text = Localization.T("help_examples");
+        helpGuide.Content = Localization.T("help_guide");
+        helpVersion.Text = $"qr2l {Project.Version}";
+
+        helpExamples.Children.Clear();
+        AddHelpExample(PayloadMode.Url, PayloadMode.Auto, "https://github.com/stefanocaronia/qr2l");
+        AddHelpExample(PayloadMode.Mail, PayloadMode.Auto, "info@example.com");
+        AddHelpExample(PayloadMode.Phone, PayloadMode.Auto, "+39 02 1234567");
+        AddHelpExample(PayloadMode.Geolocation, PayloadMode.Auto, "45.4642,9.1900");
+        AddHelpExample(PayloadMode.WiFi, PayloadMode.WiFi, "WIFI:T:WPA;S:MyWiFi;P:password123;;");
+    }
+
+    private void AddHelpExample(PayloadMode shown, PayloadMode mode, string text)
+    {
+        var link = new HyperlinkButton {
+            Content = ModeName(shown),
+            Padding = new Thickness(0, 0, 12, 0)
+        };
+
+        link.Click += (_, _) => {
+            helpButton.Flyout?.Hide();
+            qrText.Text = text;
+            SelectMode(mode);
+        };
+
+        helpExamples.Children.Add(link);
+    }
+
+    private void OnGuideClick(object? sender, RoutedEventArgs e)
+    {
+        helpButton.Flyout?.Hide();
+        OpenUrl($"{RepoUrl}#readme");
     }
 
     #endregion

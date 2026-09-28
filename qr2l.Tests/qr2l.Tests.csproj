@@ -19,6 +19,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\qr2l.Core\qr2l.Core.csproj" />
+    <!-- Solo per l'ordine di build: i test di integrazione eseguono la CLI appena compilata -->
+    <ProjectReference Include="..\qr2l.CLI\qr2l.CLI.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

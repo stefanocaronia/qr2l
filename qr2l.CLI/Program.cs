@@ -5,13 +5,19 @@ namespace Qr2l.CLI;
 
 internal class Program
 {
-    private static void Main(string[] args)
+    private const int ExitSuccess = 0;
+    private const int ExitFailure = 1;
+
+    /// <summary>
+    /// Restituisce 0 se il codice è stato generato e 1 altrimenti, così gli script possono accorgersi degli errori.
+    /// </summary>
+    private static int Main(string[] args)
     {
         Console.OutputEncoding = Encoding.UTF8;
 
         if (args.Length < 2) {
             ShowUsage();
-            return;
+            return ExitFailure;
         }
 
         string content = args[0];
@@ -28,9 +34,11 @@ internal class Program
             File.WriteAllBytes(output, data);
             ShowSuccess($"✅  QR Code generated: {output}");
             ShowOptionsInfo(options);
+            return ExitSuccess;
         } catch (Exception ex) {
             ShowError("❌ Error generating QR Code:");
             ShowError(ex.Message);
+            return ExitFailure;
         }
     }
 

@@ -1,207 +1,154 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 using Xunit;
 
 namespace qr2l.Tests;
 
-public class CliIntegrationTests
+/// <summary>
+/// Esegue la CLI compilata insieme ai test, come la userebbe una persona dal terminale.
+/// </summary>
+public sealed class CliIntegrationTests : IDisposable
 {
     #region Constants and Fields
 
-    private const string CliExecutable = "qr2l.CLI.exe";
     private readonly string cliPath;
+    private readonly string workDir;
 
     #endregion
 
     public CliIntegrationTests()
     {
-        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        cliPath = Path.Combine(baseDir, "..", "..", "..", "..", "qr2l.CLI", "bin", "Debug", "net9.0", CliExecutable);
-        cliPath = Path.GetFullPath(cliPath);
+        cliPath = FindCli();
+        workDir = Path.Combine(Path.GetTempPath(), "qr2l-tests-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
+    }
+
+    public void Dispose()
+    {
+        Directory.Delete(workDir, recursive: true);
     }
 
     [Fact]
-    public void Cli_NoArguments_ShouldShowUsage()
+    public void Cli_NoArguments_ShouldShowUsageAndFail()
     {
-        if (!File.Exists(cliPath)) {
-            return;
-        }
+        (string output, int exitCode) = RunCli("");
 
-        (string output, int exitCode) process = RunCli("");
-
-        Assert.Contains("Usage:", process.output);
-        Assert.Contains("qr2l", process.output);
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Usage:", output);
+        Assert.Contains("qr2l", output);
     }
 
     [Fact]
     public void Cli_GeneratePng_ShouldCreateFile()
     {
-        if (!File.Exists(cliPath)) {
-            return;
-        }
+        string outputFile = OutputFile("png");
 
-        string outputFile = Path.GetTempFileName() + ".png";
+        (string _, int exitCode) = RunCli($"\"Hello World\" \"{outputFile}\"");
 
-        try {
-            (string output, int exitCode) process = RunCli($"\"Hello World\" \"{outputFile}\"");
-
-            Assert.True(File.Exists(outputFile), "Output file should be created");
-
-            var fileInfo = new FileInfo(outputFile);
-            Assert.True(fileInfo.Length > 100, "File should have content");
-        } finally {
-            if (File.Exists(outputFile)) {
-                File.Delete(outputFile);
-            }
-        }
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(outputFile), "Output file should be created");
+        Assert.True(new FileInfo(outputFile).Length > 100, "File should have content");
     }
 
     [Fact]
     public void Cli_GenerateSvg_ShouldCreateFile()
     {
-        if (!File.Exists(cliPath)) {
-            return;
-        }
+        string outputFile = OutputFile("svg");
 
-        string outputFile = Path.GetTempFileName() + ".svg";
+        (string _, int exitCode) = RunCli($"\"Test SVG\" \"{outputFile}\"");
 
-        try {
-            (string output, int exitCode) process = RunCli($"\"Test SVG\" \"{outputFile}\"");
+        Assert.Equal(0, exitCode);
+        Assert.Contains("<svg", File.ReadAllText(outputFile));
+    }
 
-            Assert.True(File.Exists(outputFile), "Output file should be created");
+    [Fact]
+    public void Cli_GeneratePdf_ShouldCreateFile()
+    {
+        string outputFile = OutputFile("pdf");
 
-            string content = File.ReadAllText(outputFile);
-            Assert.Contains("<svg", content);
-        } finally {
-            if (File.Exists(outputFile)) {
-                File.Delete(outputFile);
-            }
-        }
+        (string _, int exitCode) = RunCli($"\"Test PDF\" \"{outputFile}\"");
+
+        Assert.Equal(0, exitCode);
+        Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(File.ReadAllBytes(outputFile), 0, 5));
     }
 
     [Fact]
     public void Cli_WithErrorCorrectionOption_ShouldSucceed()
     {
-        if (!File.Exists(cliPath)) {
-            return;
-        }
+        string outputFile = OutputFile("png");
 
-        string outputFile = Path.GetTempFileName() + ".png";
+        (string output, int exitCode) = RunCli($"\"Test\" \"{outputFile}\" --error-correction=high");
 
-        try {
-            (string output, int exitCode) process = RunCli($"\"Test\" \"{outputFile}\" --error-correction=high");
-
-            Assert.True(File.Exists(outputFile));
-            Assert.Contains("Error Correction: High", process.output);
-        } finally {
-            if (File.Exists(outputFile)) {
-                File.Delete(outputFile);
-            }
-        }
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(outputFile));
+        Assert.Contains("Error Correction: High", output);
     }
 
     [Fact]
     public void Cli_WithCustomColors_ShouldSucceed()
     {
-        if (!File.Exists(cliPath)) {
-            return;
-        }
+        string outputFile = OutputFile("png");
 
-        string outputFile = Path.GetTempFileName() + ".png";
+        (string output, int exitCode) = RunCli($"\"Test\" \"{outputFile}\" --dark-color=FF0000 --light-color=00FF00");
 
-        try {
-            (string output, int exitCode) process = RunCli($"\"Test\" \"{outputFile}\" --dark-color=FF0000 --light-color=00FF00");
-
-            Assert.True(File.Exists(outputFile));
-            Assert.Contains("Colors:", process.output);
-        } finally {
-            if (File.Exists(outputFile)) {
-                File.Delete(outputFile);
-            }
-        }
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(outputFile));
+        Assert.Contains("Colors: #FF0000 / #00FF00", output);
     }
 
     [Fact]
     public void Cli_WithPixelsPerModule_ShouldSucceed()
     {
-        if (!File.Exists(cliPath)) {
-            return;
-        }
+        string outputFile = OutputFile("png");
 
-        string outputFile = Path.GetTempFileName() + ".png";
+        (string _, int exitCode) = RunCli($"\"Test\" \"{outputFile}\" --pixels-per-module=10");
 
-        try {
-            (string output, int exitCode) process = RunCli($"\"Test\" \"{outputFile}\" --pixels-per-module=10");
-
-            Assert.True(File.Exists(outputFile));
-        } finally {
-            if (File.Exists(outputFile)) {
-                File.Delete(outputFile);
-            }
-        }
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(outputFile));
     }
 
     [Fact]
     public void Cli_WithPayloadModeUrl_ShouldSucceed()
     {
-        if (!File.Exists(cliPath)) {
-            return;
-        }
+        string outputFile = OutputFile("png");
 
-        string outputFile = Path.GetTempFileName() + ".png";
+        (string output, int exitCode) = RunCli($"\"example.com\" \"{outputFile}\" --payload-mode=url");
 
-        try {
-            (string output, int exitCode) process = RunCli($"\"example.com\" \"{outputFile}\" --payload-mode=url");
-
-            Assert.True(File.Exists(outputFile));
-            Assert.Contains("Payload Mode: Url", process.output);
-        } finally {
-            if (File.Exists(outputFile)) {
-                File.Delete(outputFile);
-            }
-        }
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(outputFile));
+        Assert.Contains("Payload Mode: Url", output);
     }
 
     [Fact]
     public void Cli_WithPayloadModeWifi_ShouldSucceed()
     {
-        if (!File.Exists(cliPath)) {
-            return;
-        }
+        string outputFile = OutputFile("png");
 
-        string outputFile = Path.GetTempFileName() + ".png";
+        (string output, int exitCode) = RunCli($"\"MyNetwork;password123\" \"{outputFile}\" --payload-mode=wifi --wifi-auth=wpa");
 
-        try {
-            (string output, int exitCode) process = RunCli($"\"MyNetwork;password123\" \"{outputFile}\" --payload-mode=wifi --wifi-auth=wpa");
-
-            Assert.True(File.Exists(outputFile));
-            Assert.Contains("WiFi Auth: WPA", process.output);
-        } finally {
-            if (File.Exists(outputFile)) {
-                File.Delete(outputFile);
-            }
-        }
+        Assert.Equal(0, exitCode);
+        Assert.True(File.Exists(outputFile));
+        Assert.Contains("WiFi Auth: WPA", output);
     }
 
     [Fact]
     public void Cli_InvalidFormat_ShouldFail()
     {
-        if (!File.Exists(cliPath)) {
-            return;
-        }
+        string outputFile = OutputFile("invalid");
 
-        string outputFile = Path.GetTempFileName() + ".invalid";
+        (string output, int exitCode) = RunCli($"\"Test\" \"{outputFile}\"");
 
-        try {
-            (string output, int exitCode) process = RunCli($"\"Test\" \"{outputFile}\"");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Error", output);
+        Assert.False(File.Exists(outputFile));
+    }
 
-            Assert.Contains("Error", process.output);
-        } finally {
-            if (File.Exists(outputFile)) {
-                File.Delete(outputFile);
-            }
-        }
+    private string OutputFile(string extension)
+    {
+        return Path.Combine(workDir, "qr." + extension);
     }
 
     private (string output, int exitCode) RunCli(string arguments)
@@ -211,21 +158,46 @@ public class CliIntegrationTests
             Arguments = arguments,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
             UseShellExecute = false,
             CreateNoWindow = true
         };
 
-        using Process? process = Process.Start(startInfo);
-
-        if (process == null) {
-            return (string.Empty, -1);
-        }
+        using Process process = Process.Start(startInfo)
+            ?? throw new InvalidOperationException($"Cannot start {cliPath}");
 
         string output = process.StandardOutput.ReadToEnd();
         string error = process.StandardError.ReadToEnd();
         process.WaitForExit();
 
-        string combinedOutput = output + error;
-        return (combinedOutput, process.ExitCode);
+        return (output + error, process.ExitCode);
+    }
+
+    /// <summary>
+    /// La CLI compilata con la stessa configurazione dei test. Il progetto di test la fa compilare
+    /// prima di sé; se non c'è, i test devono fallire e non passare in silenzio.
+    /// </summary>
+    private static string FindCli()
+    {
+        string testBin = Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory);
+        var framework = new DirectoryInfo(testBin);
+        string configuration = framework.Parent!.Name;
+        string cliBin = Path.GetFullPath(Path.Combine(testBin, "..", "..", "..", "..", "qr2l.CLI", "bin", configuration, framework.Name));
+        string executable = OperatingSystem.IsWindows() ? "qr2l.exe" : "qr2l";
+
+        // La CLI è self-contained, quindi l'uscita di build sta nella cartella del runtime
+        string[] candidates = [
+            Path.Combine(cliBin, RuntimeInformation.RuntimeIdentifier, executable),
+            Path.Combine(cliBin, executable)
+        ];
+
+        foreach (string candidate in candidates) {
+            if (File.Exists(candidate)) {
+                return candidate;
+            }
+        }
+
+        throw new FileNotFoundException($"CLI executable not found. Searched: {string.Join(", ", candidates)}");
     }
 }

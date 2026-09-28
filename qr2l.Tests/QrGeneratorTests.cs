@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Globalization;
+using System.IO.Compression;
 using System.Text;
+using System.Text.RegularExpressions;
 using qr2l.Core;
+using SkiaSharp;
 using Xunit;
 
 namespace qr2l.Tests;
@@ -283,5 +287,102 @@ public class QrGeneratorTests
         Assert.Equal(PayloadMode.Phone, QrGenerator.DetectPayloadMode("+1234567890"));
         Assert.Equal(PayloadMode.Geolocation, QrGenerator.DetectPayloadMode("45.4642,9.1900"));
         Assert.Equal(PayloadMode.Text, QrGenerator.DetectPayloadMode("Just plain text"));
+    }
+
+    private static readonly QrColor DarkBlue = new(0x1F, 0x3A, 0x93);
+    private static readonly QrColor Cream = new(0xFF, 0xF8, 0xE1);
+
+    [Fact]
+    public void Generate_Pdf_ShouldUseTheChosenColors()
+    {
+        var options = new QrCodeOptions { darkColor = DarkBlue, lightColor = Cream };
+
+        byte[] pdf = QrGenerator.Generate("Color Test", ExportFormat.Pdf, options);
+        List<(double R, double G, double B)> fills = PdfFillColors(pdf);
+
+        Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(pdf, 0, 5));
+        Assert.Contains(fills, color => SameColor(color, DarkBlue));
+        Assert.Contains(fills, color => SameColor(color, Cream));
+    }
+
+    [Fact]
+    public void Generate_Pdf_ShouldEmbedTheLogo()
+    {
+        string without = Encoding.Latin1.GetString(QrGenerator.Generate("Logo Test", ExportFormat.Pdf, new QrCodeOptions()));
+        string with = Encoding.Latin1.GetString(QrGenerator.Generate("Logo Test", ExportFormat.Pdf, new QrCodeOptions { logo = CreateLogo() }));
+
+        Assert.DoesNotContain("/Subtype /Image", without);
+        Assert.Contains("/Subtype /Image", with);
+    }
+
+    [Fact]
+    public void Generate_PostScript_ShouldUseTheChosenColors()
+    {
+        var options = new QrCodeOptions { darkColor = DarkBlue, lightColor = Cream };
+
+        string ps = Encoding.ASCII.GetString(QrGenerator.Generate("Color Test", ExportFormat.PostScript, options));
+
+        Assert.StartsWith("%!PS-Adobe-3.0", ps);
+        Assert.Contains("0.122 0.227 0.576 setrgbcolor", ps);
+        Assert.Contains("1 0.973 0.882 setrgbcolor", ps);
+    }
+
+    [Fact]
+    public void Generate_PostScript_ShouldEmbedTheLogo()
+    {
+        string without = Encoding.ASCII.GetString(QrGenerator.Generate("Logo Test", ExportFormat.PostScript, new QrCodeOptions()));
+        string with = Encoding.ASCII.GetString(QrGenerator.Generate("Logo Test", ExportFormat.PostScript, new QrCodeOptions { logo = CreateLogo() }));
+
+        Assert.DoesNotContain("colorimage", without);
+        Assert.Contains("colorimage", with);
+    }
+
+    private static byte[] CreateLogo()
+    {
+        using var bitmap = new SKBitmap(16, 16);
+        bitmap.Erase(SKColors.Red);
+        using SKData png = bitmap.Encode(SKEncodedImageFormat.Png, 100);
+        return png.ToArray();
+    }
+
+    /// <summary>
+    /// Colori di riempimento ("r g b rg") usati nei content stream del PDF, decompressi se necessario.
+    /// </summary>
+    private static List<(double R, double G, double B)> PdfFillColors(byte[] pdf)
+    {
+        var colors = new List<(double R, double G, double B)>();
+        string raw = Encoding.Latin1.GetString(pdf);
+
+        foreach (Match stream in Regex.Matches(raw, @"(?<!end)stream\r?\n")) {
+            int start = stream.Index + stream.Length;
+            int end = raw.IndexOf("endstream", start, StringComparison.Ordinal);
+            byte[] data = pdf[start..end];
+            string content;
+
+            try {
+                using var input = new ZLibStream(new MemoryStream(data), CompressionMode.Decompress);
+                using var output = new MemoryStream();
+                input.CopyTo(output);
+                content = Encoding.Latin1.GetString(output.ToArray());
+            } catch (InvalidDataException) {
+                content = Encoding.Latin1.GetString(data);
+            }
+
+            foreach (Match fill in Regex.Matches(content, @"([\d.]+) ([\d.]+) ([\d.]+) rg\b")) {
+                colors.Add((
+                    double.Parse(fill.Groups[1].Value, CultureInfo.InvariantCulture),
+                    double.Parse(fill.Groups[2].Value, CultureInfo.InvariantCulture),
+                    double.Parse(fill.Groups[3].Value, CultureInfo.InvariantCulture)));
+            }
+        }
+
+        return colors;
+    }
+
+    private static bool SameColor((double R, double G, double B) actual, QrColor expected)
+    {
+        return Math.Abs(actual.R - (expected.R / 255d)) < 0.01 &&
+               Math.Abs(actual.G - (expected.G / 255d)) < 0.01 &&
+               Math.Abs(actual.B - (expected.B / 255d)) < 0.01;
     }
 }

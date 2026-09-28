@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Globalization;
 using System.Text;
 using QRCoder;
 using SkiaSharp;
@@ -350,6 +351,14 @@ public static class QrGenerator
     private const float LogoWidthRatio = 0.24f;
     private const float LogoPaddingRatio = 0.07f;
 
+    // Il PDF conserva le dimensioni fisiche delle versioni precedenti: il disegno in pixel reso a 150 dpi
+    private const float PdfDpi = 150f;
+
+    // Lato più lungo, in pixel, del logo incorporato nel PostScript
+    private const int PostScriptLogoMaxSize = 512;
+
+    private const string HexDigits = "0123456789ABCDEF";
+
     private static byte[] EncodeRaster(QRCodeData data, QrCodeOptions options, SKEncodedImageFormat format)
     {
         using SKBitmap bitmap = RenderBitmap(data, options);
@@ -365,22 +374,41 @@ public static class QrGenerator
     }
 
     /// <summary>
-    /// Disegna i moduli del codice dalla matrice di QRCoder (quiet zone compresa) e il logo, se presente.
+    /// Rende il codice in un'immagine, un pixel per unità di disegno.
     /// </summary>
     private static SKBitmap RenderBitmap(QRCodeData data, QrCodeOptions options)
+    {
+        int size = data.ModuleMatrix.Count * options.pixelsPerModule;
+
+        var bitmap = new SKBitmap(new SKImageInfo(size, size, SKColorType.Bgra8888, SKAlphaType.Premul));
+        using var canvas = new SKCanvas(bitmap);
+        DrawCode(canvas, data, options);
+        canvas.Flush();
+        return bitmap;
+    }
+
+    /// <summary>
+    /// Disegna sfondo, moduli (quiet zone compresa) e logo in unità pixel. Lo stesso disegno serve le
+    /// immagini e il PDF, così i formati condividono colori, forma dei pixel e logo.
+    /// </summary>
+    private static void DrawCode(SKCanvas canvas, QRCodeData data, QrCodeOptions options)
     {
         List<BitArray> matrix = data.ModuleMatrix;
         int modules = matrix.Count;
         float module = options.pixelsPerModule;
-        int size = modules * options.pixelsPerModule;
+        float size = modules * module;
 
-        var bitmap = new SKBitmap(new SKImageInfo(size, size, SKColorType.Bgra8888, SKAlphaType.Premul));
-        using var canvas = new SKCanvas(bitmap);
-        canvas.Clear(ToSkColor(options.lightColor));
+        using (var background = new SKPaint { Color = ToSkColor(options.lightColor) }) {
+            canvas.DrawRect(0, 0, size, size, background);
+        }
 
         bool circles = options.shape == PixelShape.Circle;
         float radius = module * CirclePixelFactor / 2f;
-        using var paint = new SKPaint { Color = ToSkColor(options.darkColor), IsAntialias = circles };
+
+        // Tutti i moduli in un unico tracciato, riempito una volta sola: nei PDF evita le sottili
+        // fessure che alcuni visualizzatori mostrano tra forme adiacenti riempite una per una
+        using var squares = new SKPath();
+        using var dots = new SKPath();
 
         for (var y = 0; y < modules; y++) {
             for (var x = 0; x < modules; x++) {
@@ -389,19 +417,22 @@ public static class QrGenerator
                 }
 
                 if (circles && !IsFinderPattern(x, y, modules)) {
-                    canvas.DrawCircle((x + 0.5f) * module, (y + 0.5f) * module, radius, paint);
+                    dots.AddCircle((x + 0.5f) * module, (y + 0.5f) * module, radius);
                 } else {
-                    canvas.DrawRect(x * module, y * module, module, module, paint);
+                    squares.AddRect(SKRect.Create(x * module, y * module, module, module));
                 }
             }
         }
 
+        using var paint = new SKPaint { Color = ToSkColor(options.darkColor) };
+        canvas.DrawPath(squares, paint);
+
+        paint.IsAntialias = true;
+        canvas.DrawPath(dots, paint);
+
         if (options.logo != null) {
             DrawLogo(canvas, size, options.logo, options.lightColor);
         }
-
-        canvas.Flush();
-        return bitmap;
     }
 
     /// <summary>
@@ -424,25 +455,38 @@ public static class QrGenerator
     /// Disegna il logo al centro su uno sfondo che libera i moduli sottostanti:
     /// senza di esso il logo risulterebbe semplicemente sovrapposto al disegno del codice.
     /// </summary>
-    private static void DrawLogo(SKCanvas canvas, int size, byte[] logoBytes, QrColor background)
+    private static void DrawLogo(SKCanvas canvas, float size, byte[] logoBytes, QrColor background)
     {
-        using SKBitmap logo = SKBitmap.Decode(logoBytes)
-            ?? throw new ArgumentException("The logo is not a valid image.");
-
-        float logoWidth = size * LogoWidthRatio;
-        float logoHeight = logoWidth * logo.Height / logo.Width;
-        float x = (size - logoWidth) / 2f;
-        float y = (size - logoHeight) / 2f;
-        float padding = logoWidth * LogoPaddingRatio;
+        using SKBitmap logo = DecodeLogo(logoBytes);
+        LogoPlacement placement = PlaceLogo(size, logo.Width, logo.Height);
 
         using var backgroundPaint = new SKPaint { Color = ToSkColor(background) };
-        canvas.DrawRect(
-            SKRect.Create(x - padding, y - padding, logoWidth + (padding * 2f), logoHeight + (padding * 2f)),
-            backgroundPaint);
+        canvas.DrawRect(placement.Background, backgroundPaint);
 
         using SKImage image = SKImage.FromBitmap(logo);
         var sampling = new SKSamplingOptions(SKCubicResampler.Mitchell);
-        canvas.DrawImage(image, SKRect.Create(x, y, logoWidth, logoHeight), sampling);
+        canvas.DrawImage(image, placement.Image, sampling);
+    }
+
+    /// <summary>
+    /// Posizione del logo al centro del codice e del riquadro di sfondo che lo circonda.
+    /// </summary>
+    private static LogoPlacement PlaceLogo(float size, int logoWidth, int logoHeight)
+    {
+        float width = size * LogoWidthRatio;
+        float height = width * logoHeight / logoWidth;
+        float x = (size - width) / 2f;
+        float y = (size - height) / 2f;
+        float padding = width * LogoPaddingRatio;
+
+        return new LogoPlacement(
+            SKRect.Create(x - padding, y - padding, width + (padding * 2f), height + (padding * 2f)),
+            SKRect.Create(x, y, width, height));
+    }
+
+    private static SKBitmap DecodeLogo(byte[] logoBytes)
+    {
+        return SKBitmap.Decode(logoBytes) ?? throw new ArgumentException("The logo is not a valid image.");
     }
 
     private static SKColor ToSkColor(QrColor color)
@@ -463,17 +507,174 @@ public static class QrGenerator
         return Encoding.UTF8.GetBytes(svg);
     }
 
+    /// <summary>
+    /// PDF vettoriale disegnato con lo stesso codice delle immagini, quindi con colori, forma dei pixel e logo.
+    /// </summary>
     private static byte[] GeneratePdf(QRCodeData data, QrCodeOptions options)
     {
-        using var qr = new PdfByteQRCode(data);
-        byte[] pdf = qr.GetGraphic(options.pixelsPerModule);
-        return pdf;
+        float scale = 72f / PdfDpi;
+        float page = data.ModuleMatrix.Count * options.pixelsPerModule * scale;
+
+        SKDocumentPdfMetadata metadata = SKDocumentPdfMetadata.Default;
+        metadata.Title = "QR Code";
+        metadata.Creator = "qr2l";
+
+        using var stream = new SKDynamicMemoryWStream();
+
+        using (SKDocument document = SKDocument.CreatePdf(stream, metadata)
+                   ?? throw new InvalidOperationException("PDF export is not available on this platform.")) {
+            SKCanvas canvas = document.BeginPage(page, page);
+            canvas.Scale(scale);
+            DrawCode(canvas, data, options);
+            document.EndPage();
+            document.Close();
+        }
+
+        using SKData pdf = stream.DetachAsData();
+        return pdf.ToArray();
     }
 
+    /// <summary>
+    /// PostScript scritto direttamente, con la stessa geometria del disegno: colori, forma dei pixel e logo.
+    /// Un'unità di disegno vale un punto, come nelle versioni precedenti.
+    /// </summary>
     private static byte[] GeneratePostScript(QRCodeData data, QrCodeOptions options)
     {
-        using var qr = new PostscriptQRCode(data);
-        string postscript = qr.GetGraphic(options.pixelsPerModule);
-        return Encoding.UTF8.GetBytes(postscript);
+        List<BitArray> matrix = data.ModuleMatrix;
+        int modules = matrix.Count;
+        float module = options.pixelsPerModule;
+        float size = modules * module;
+        bool circles = options.shape == PixelShape.Circle;
+        var box = (int)Math.Ceiling(size);
+
+        var ps = new StringBuilder();
+        ps.Append("%!PS-Adobe-3.0\n");
+        ps.Append("%%Creator: qr2l\n");
+        ps.Append("%%Title: QR Code\n");
+        ps.Append($"%%BoundingBox: 0 0 {box} {box}\n");
+        ps.Append($"%%HiResBoundingBox: 0 0 {Ps(size)} {Ps(size)}\n");
+        ps.Append("%%LanguageLevel: 2\n");
+        ps.Append("%%DocumentData: Clean7Bit\n");
+        ps.Append("%%Pages: 1\n");
+        ps.Append("%%EndComments\n");
+
+        // s disegna un modulo quadrato e d uno tondo, a partire dalle coordinate del disegno
+        ps.Append("%%BeginProlog\n");
+        ps.Append($"/m {Ps(module)} def\n");
+        ps.Append($"/rd {Ps(module * CirclePixelFactor / 2f)} def\n");
+        ps.Append("/s { moveto m 0 rlineto 0 m rlineto m neg 0 rlineto closepath } bind def\n");
+        ps.Append("/d { 2 copy exch rd add exch moveto rd 0 360 arc closepath } bind def\n");
+        ps.Append("%%EndProlog\n");
+
+        ps.Append("%%BeginSetup\n");
+        ps.Append("%%BeginFeature: *PageSize Default\n");
+        ps.Append($"<< /PageSize [{Ps(size)} {Ps(size)}] >> setpagedevice\n");
+        ps.Append("%%EndFeature\n");
+        ps.Append("%%EndSetup\n");
+
+        ps.Append("%%Page: 1 1\n");
+        ps.Append("gsave\n");
+
+        // Le coordinate del disegno crescono verso il basso, quelle PostScript verso l'alto
+        ps.Append($"0 {Ps(size)} translate 1 -1 scale\n");
+        ps.Append($"{PsColor(options.lightColor)} 0 0 {Ps(size)} {Ps(size)} rectfill\n");
+
+        // Un unico tracciato per tutti i moduli, come nel PDF
+        ps.Append($"{PsColor(options.darkColor)} newpath\n");
+
+        for (var y = 0; y < modules; y++) {
+            for (var x = 0; x < modules; x++) {
+                if (!matrix[y][x]) {
+                    continue;
+                }
+
+                if (circles && !IsFinderPattern(x, y, modules)) {
+                    ps.Append($"{Ps((x + 0.5f) * module)} {Ps((y + 0.5f) * module)} d\n");
+                } else {
+                    ps.Append($"{Ps(x * module)} {Ps(y * module)} s\n");
+                }
+            }
+        }
+
+        ps.Append("fill\n");
+
+        if (options.logo != null) {
+            AppendPostScriptLogo(ps, size, options.logo, options.lightColor);
+        }
+
+        ps.Append("grestore\n");
+        ps.Append("showpage\n");
+        ps.Append("%%EOF\n");
+
+        return Encoding.ASCII.GetBytes(ps.ToString());
     }
+
+    /// <summary>
+    /// Il logo entra nel PostScript come immagine RGB già composta sullo sfondo: il livello 2 non
+    /// gestisce la trasparenza, e il logo sta comunque su un riquadro a tinta unita.
+    /// </summary>
+    private static void AppendPostScriptLogo(StringBuilder ps, float size, byte[] logoBytes, QrColor background)
+    {
+        using SKBitmap logo = DecodeLogo(logoBytes);
+        LogoPlacement placement = PlaceLogo(size, logo.Width, logo.Height);
+
+        float reduction = Math.Min(1f, (float)PostScriptLogoMaxSize / Math.Max(logo.Width, logo.Height));
+        int width = Math.Max(1, (int)Math.Round(logo.Width * reduction));
+        int height = Math.Max(1, (int)Math.Round(logo.Height * reduction));
+
+        using var composed = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
+
+        using (var canvas = new SKCanvas(composed)) {
+            canvas.Clear(ToSkColor(background));
+            using SKImage image = SKImage.FromBitmap(logo);
+            canvas.DrawImage(image, SKRect.Create(0, 0, width, height), new SKSamplingOptions(SKCubicResampler.Mitchell));
+        }
+
+        SKRect back = placement.Background;
+        SKRect area = placement.Image;
+
+        ps.Append($"{PsColor(background)} {Ps(back.Left)} {Ps(back.Top)} {Ps(back.Width)} {Ps(back.Height)} rectfill\n");
+        ps.Append("gsave\n");
+        ps.Append($"{Ps(area.Left)} {Ps(area.Top)} translate {Ps(area.Width)} {Ps(area.Height)} scale\n");
+
+        // Nello spazio già ribaltato la prima riga dell'immagine finisce in alto
+        ps.Append($"{width} {height} 8 [{width} 0 0 {height} 0 0] currentfile /ASCIIHexDecode filter false 3 colorimage\n");
+
+        ReadOnlySpan<byte> pixels = composed.GetPixelSpan();
+        var column = 0;
+
+        for (var y = 0; y < height; y++) {
+            ReadOnlySpan<byte> row = pixels.Slice(y * composed.RowBytes, width * 4);
+
+            for (var x = 0; x < width; x++) {
+                // Rgba8888: rosso, verde, blu, alfa; l'alfa è pieno dopo la composizione sullo sfondo
+                for (var channel = 0; channel < 3; channel++) {
+                    byte value = row[(x * 4) + channel];
+                    ps.Append(HexDigits[value >> 4]).Append(HexDigits[value & 0xF]);
+                }
+
+                column += 6;
+
+                if (column >= 72) {
+                    ps.Append('\n');
+                    column = 0;
+                }
+            }
+        }
+
+        ps.Append(">\n");
+        ps.Append("grestore\n");
+    }
+
+    private static string Ps(float value)
+    {
+        return value.ToString("0.###", CultureInfo.InvariantCulture);
+    }
+
+    private static string PsColor(QrColor color)
+    {
+        return $"{Ps(color.R / 255f)} {Ps(color.G / 255f)} {Ps(color.B / 255f)} setrgbcolor";
+    }
+
+    private readonly record struct LogoPlacement(SKRect Background, SKRect Image);
 }

@@ -17,9 +17,6 @@
         }
     </script>
 
-    <!-- FontAwesome per le icone -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <!-- EasyQRCodeJS per generare QR con loghi e colori -->
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.5.0/dist/easy.qrcode.min.js"></script>
 
@@ -76,14 +73,64 @@
             color: #111827;
         }
 
-        /* Il select eredita colori trasparenti: le option risultano illeggibili senza colori espliciti */
-        #lang-select,
+        /* Nella barra in basso i suggerimenti si aprono verso l'alto, e sul bordo destro restano nella pagina */
+        .tip-up[data-tip]:hover::after {
+            top: auto;
+            bottom: 100%;
+            margin-top: 0;
+            margin-bottom: 6px;
+        }
+
+        .tip-end[data-tip]:hover::after {
+            left: auto;
+            right: 0;
+            transform: none;
+        }
+
+        /* Icone come nell'app: glyph adatta il disegno al contorno del simbolo, così hanno tutte la stessa altezza */
+        svg.glyph {
+            height: 16px;
+            width: auto;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+
+        svg.glyph.small {
+            height: 14px;
+        }
+
+        /* Le icone dei tipi restano nel quadrato Material, con le stesse proporzioni */
+        svg.glyph-box {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .icon-btn:hover {
+            background-color: rgba(128, 128, 128, 0.2);
+        }
+
+        /* Il select della lingua sembra un'etichetta; le option hanno colori espliciti per restare leggibili */
+        #lang-select {
+            background-color: transparent;
+            color: inherit;
+        }
+
         #lang-select option {
             background-color: #ffffff;
             color: #1f2937;
         }
 
-        html.dark #lang-select,
         html.dark #lang-select option {
             background-color: #374151;
             color: #e5e7eb;
@@ -102,44 +149,23 @@
     <!-- Main Container (replica Form1) -->
     <div class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 shadow-lg rounded-sm flex flex-col h-full max-w-md mx-auto w-full">
 
-        <!-- Toolbar -->
-        <div class="flex items-center bg-gray-100 dark:bg-gray-800 p-2 border-b border-gray-200 dark:border-gray-700 space-x-2">
-            <button onclick="saveImage()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" data-i18n-title="title_save">
-                <i class="fas fa-save text-blue-600"></i>
+        <!-- Toolbar: le azioni sul codice e l'aiuto, come nell'app -->
+        <div class="flex items-center bg-gray-100 dark:bg-gray-800 p-1.5 border-b border-gray-200 dark:border-gray-700 space-x-0.5">
+            <button onclick="saveImage()" class="icon-btn" data-i18n-title="title_save">
+                <svg class="glyph" data-icon="content-save" style="color: #2F6FD6"></svg>
             </button>
-            <button onclick="copyImage()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" data-i18n-title="title_copy_image">
-                <i class="fas fa-clipboard text-gray-700 dark:text-gray-300"></i>
+            <button onclick="copyImage()" class="icon-btn" data-i18n-title="title_copy_image">
+                <svg class="glyph" data-icon="content-copy" style="color: #B0851E"></svg>
             </button>
-            <!-- SVG non supportato nativamente in modo semplice con loghi lato client in JS puro quanto Canvas,
-                 ma manteniamo il pulsante per fedeltà UI (mostrerà un alert) -->
-            <button onclick="copySvgWarning()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" data-i18n-title="title_copy_svg">
-                <i class="fas fa-puzzle-piece text-green-600"></i>
+            <!-- La copia SVG con il logo non c'è nella versione web: il pulsante lo spiega -->
+            <button onclick="copySvgWarning()" class="icon-btn" data-i18n-title="title_copy_svg">
+                <svg class="glyph" data-icon="xml" style="color: #2E9E5B"></svg>
             </button>
 
             <div class="flex-grow"></div>
 
-            <select id="lang-select" onchange="setLanguage(this.value)" data-i18n-title="title_lang"
-                class="text-xs border border-gray-300 dark:border-gray-600 rounded px-1 py-1 cursor-pointer focus:outline-none">
-                <option value="en">EN</option>
-                <option value="it">IT</option>
-                <option value="es">ES</option>
-                <option value="fr">FR</option>
-                <option value="de">DE</option>
-                <option value="pt">PT</option>
-                <option value="ru">RU</option>
-                <option value="zh">中文</option>
-                <option value="ja">日本語</option>
-                <option value="ko">한국어</option>
-            </select>
-
-            <button onclick="openDonate()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" data-i18n-title="title_donate">
-                <i class="fas fa-heart text-red-500"></i>
-            </button>
-            <button onclick="showHelp()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" data-i18n-title="title_help">
-                <i class="fas fa-question-circle text-blue-500"></i>
-            </button>
-            <button id="theme-toggle" onclick="toggleTheme()" class="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded" data-i18n-title="title_theme">
-                <i id="theme-icon" class="fas fa-sun text-yellow-500"></i>
+            <button onclick="showHelp()" class="icon-btn" data-i18n-title="title_help">
+                <svg class="glyph" data-icon="help-circle" style="color: #2F6FD6"></svg>
             </button>
         </div>
 
@@ -148,7 +174,7 @@
             <!-- Foreground Color -->
             <div class="relative group">
                 <div id="fg-preview" class="w-full h-8 border border-gray-400 dark:border-gray-600 cursor-pointer bg-black flex items-center justify-center text-xs text-white shadow-sm whitespace-nowrap overflow-hidden px-1" onclick="document.getElementById('fg-color').click()">
-                    <i class="fas fa-palette mr-1.5 opacity-80"></i><span data-i18n="fg_color">Pixel Color</span>
+                    <svg class="glyph small mr-2" data-icon="qrcode"></svg><span data-i18n="color_code">Code</span>
                 </div>
                 <input type="color" id="fg-color" class="hidden-input" value="#000000" onchange="updateColor('fg', this.value)">
             </div>
@@ -156,7 +182,7 @@
             <!-- Background Color -->
             <div class="relative group">
                 <div id="bg-preview" class="w-full h-8 border border-gray-400 dark:border-gray-600 cursor-pointer bg-white flex items-center justify-center text-xs text-gray-800 shadow-sm whitespace-nowrap overflow-hidden px-1" onclick="document.getElementById('bg-color').click()">
-                    <i class="fas fa-fill-drip mr-1.5 opacity-80"></i><span data-i18n="bg_color">Background</span>
+                    <svg class="glyph small mr-2" data-icon="format-color-fill"></svg><span data-i18n="color_background">Background</span>
                 </div>
                 <input type="color" id="bg-color" class="hidden-input" value="#ffffff" onchange="updateColor('bg', this.value)">
             </div>
@@ -164,7 +190,7 @@
             <!-- Logo Upload -->
             <div class="relative group">
                 <div id="logo-btn" class="w-full h-8 border border-gray-400 dark:border-gray-600 cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 flex items-center justify-center text-xs text-gray-700 dark:text-gray-200 overflow-hidden whitespace-nowrap px-1" onclick="handleLogoClick()">
-                    <i id="logo-btn-icon" class="fas fa-image mr-1.5 opacity-80"></i><span id="logo-btn-label" data-i18n="logo_add">Add Logo</span>
+                    <svg id="logo-btn-icon" class="glyph small mr-2" data-icon="image"></svg><span id="logo-btn-label" data-i18n="logo_add">Add Logo</span>
                 </div>
                 <input type="file" id="logo-upload" class="hidden-input" accept="image/*" onchange="handleLogoUpload(this)">
             </div>
@@ -187,15 +213,40 @@
             </div>
         </div>
 
-        <!-- Footer / Status Bar -->
-        <div class="bg-gray-100 dark:bg-gray-800 p-1 px-2 text-xs border-t border-gray-300 dark:border-gray-700 flex justify-between items-center h-8">
-            <span id="detected-mode" class="font-semibold text-gray-600 dark:text-gray-300">Text</span>
-            <div class="flex items-center space-x-3">
+        <!-- Barra in basso: il tipo riconosciuto a sinistra; a destra l'app, le preferenze e il progetto, come nell'app -->
+        <div class="bg-gray-100 dark:bg-gray-800 px-2 text-xs border-t border-gray-300 dark:border-gray-700 flex justify-between items-center h-10 text-gray-700 dark:text-gray-300">
+            <span class="flex items-center space-x-1.5 opacity-60">
+                <svg id="mode-icon" class="glyph-box" data-icon="text"></svg><span id="detected-mode" class="text-sm">Text</span>
+            </span>
+            <div class="flex items-center space-x-0.5">
                 <!-- Versione leggera: per moduli e altri formati si rimanda all'app desktop -->
                 <a href="https://github.com/stefanocaronia/qr2l/releases/latest" target="_blank" rel="noopener"
-                   class="text-blue-600 hover:underline dark:text-blue-400"><i class="fas fa-download mr-1"></i><span data-i18n="get_app">Desktop app</span></a>
-                <button onclick="window.open('https://github.com/stefanocaronia/qr2l', '_blank')" class="text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white">
-                    <i class="fab fa-github text-lg"></i>
+                   class="flex items-center space-x-1 text-blue-600 hover:underline dark:text-blue-400 mr-2">
+                    <svg class="glyph small" data-icon="download"></svg><span data-i18n="get_app">Desktop app</span>
+                </a>
+                <span class="flex items-center space-x-1 tip-up" data-i18n-title="title_lang">
+                    <svg class="glyph small" data-icon="web"></svg>
+                    <select id="lang-select" onchange="setLanguage(this.value)" class="text-sm border-0 p-0 pr-1 cursor-pointer focus:outline-none">
+                        <option value="en">EN</option>
+                        <option value="it">IT</option>
+                        <option value="es">ES</option>
+                        <option value="fr">FR</option>
+                        <option value="de">DE</option>
+                        <option value="pt">PT</option>
+                        <option value="ru">RU</option>
+                        <option value="zh">中文</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                    </select>
+                </span>
+                <button id="theme-toggle" onclick="toggleTheme()" class="icon-btn tip-up" data-i18n-title="title_theme">
+                    <svg id="theme-icon" class="glyph" data-icon="white-balance-sunny"></svg>
+                </button>
+                <button onclick="window.open('https://github.com/stefanocaronia/qr2l', '_blank')" class="icon-btn tip-up tip-end" data-i18n-title="title_repo">
+                    <svg class="glyph" data-icon="github"></svg>
+                </button>
+                <button onclick="openDonate()" class="icon-btn tip-up tip-end" data-i18n-title="title_donate">
+                    <svg class="glyph" data-icon="heart" style="color: #E0453A"></svg>
                 </button>
             </div>
         </div>
@@ -230,7 +281,7 @@
             en: {
                 title_save: "Save QR Code", title_copy_image: "Copy Image", title_copy_svg: "Copy SVG (text only)",
                 title_donate: "Buy me a coffee", title_help: "Help", title_theme: "Toggle theme", title_lang: "Language",
-                fg_color: "Pixel Color", bg_color: "Background", logo_add: "Add Logo", logo_remove: "Remove Logo",
+                color_code: "Code", color_background: "Background", logo_add: "Set the logo", logo_remove: "Remove the logo",
                 placeholder: "Enter the text for the QR Code here...", waiting: "Waiting for input...",
                 help_title: "qr2l - Help",
                 help_p1: "Enter your text in the box to generate the QR code.",
@@ -241,6 +292,8 @@
                 help_wifi: "WiFi: WIFI:NetworkName;Password (no password for open networks)",
                 invalid_content: "This text doesn't fit the selected content type", get_app: "Desktop app",
                 help_lite: "This is a lighter version: the desktop app adds forms for WiFi, contacts and events, and saves to SVG, PDF and other formats.",
+                title_repo: "Open the project repository",
+                mode_text: "Text", fmt_url: "URL", fmt_mail: "Email", fmt_phone: "Phone", fmt_sms: "SMS", fmt_whatsapp: "WhatsApp", fmt_wifi: "WiFi", fmt_geo: "Geolocation", fmt_contact: "Contact", fmt_event: "Event",
                 help_geo: "Coordinates: lat,lon", help_phone: "Phone/SMS/WhatsApp", close: "Close",
                 alert_no_qr: "No QR code generated to save.",
                 alert_copied: "Image copied to clipboard!",
@@ -251,7 +304,7 @@
             it: {
                 title_save: "Salva QR Code", title_copy_image: "Copia Immagine", title_copy_svg: "Copia SVG (solo testo)",
                 title_donate: "Offrimi un caffè", title_help: "Aiuto", title_theme: "Cambia tema", title_lang: "Lingua",
-                fg_color: "Colore Pixel", bg_color: "Sfondo", logo_add: "Inserisci Logo", logo_remove: "Rimuovi Logo",
+                color_code: "Codice", color_background: "Sfondo", logo_add: "Inserisci il logo", logo_remove: "Rimuovi il logo",
                 placeholder: "Inserisci qui il testo per il QR Code...", waiting: "In attesa di input...",
                 help_title: "qr2l - Guida",
                 help_p1: "Inserisci il testo nella casella per generare il QR.",
@@ -262,6 +315,8 @@
                 help_wifi: "WiFi: WIFI:NomeRete;Password (senza password per le reti aperte)",
                 invalid_content: "Il testo non è adatto al tipo di contenuto scelto", get_app: "App desktop",
                 help_lite: "Questa è una versione leggera: l'app desktop aggiunge i moduli per WiFi, contatti ed eventi e salva anche in SVG, PDF e altri formati.",
+                title_repo: "Apri il repository del progetto",
+                mode_text: "Testo", fmt_url: "URL", fmt_mail: "Email", fmt_phone: "Telefono", fmt_sms: "SMS", fmt_whatsapp: "WhatsApp", fmt_wifi: "WiFi", fmt_geo: "Geolocalizzazione", fmt_contact: "Contatto", fmt_event: "Evento",
                 help_geo: "Coordinate: lat,lon", help_phone: "Telefono/SMS/WhatsApp", close: "Chiudi",
                 alert_no_qr: "Nessun QR code generato da salvare.",
                 alert_copied: "Immagine copiata negli appunti!",
@@ -272,7 +327,7 @@
             es: {
                 title_save: "Guardar código QR", title_copy_image: "Copiar imagen", title_copy_svg: "Copiar SVG (solo texto)",
                 title_donate: "Invítame a un café", title_help: "Ayuda", title_theme: "Cambiar tema", title_lang: "Idioma",
-                fg_color: "Color del píxel", bg_color: "Fondo", logo_add: "Añadir logo", logo_remove: "Quitar logo",
+                color_code: "Código", color_background: "Fondo", logo_add: "Añadir el logo", logo_remove: "Quitar el logo",
                 placeholder: "Introduce aquí el texto para el código QR...", waiting: "Esperando entrada...",
                 help_title: "qr2l - Ayuda",
                 help_p1: "Introduce el texto en el cuadro para generar el código QR.",
@@ -283,6 +338,8 @@
                 help_wifi: "WiFi: WIFI:NombreRed;Contraseña (sin contraseña para redes abiertas)",
                 invalid_content: "El texto no se ajusta al tipo de contenido elegido", get_app: "App de escritorio",
                 help_lite: "Esta es una versión ligera: la app de escritorio añade formularios para WiFi, contactos y eventos, y guarda también en SVG, PDF y otros formatos.",
+                title_repo: "Abrir el repositorio del proyecto",
+                mode_text: "Texto", fmt_url: "URL", fmt_mail: "Correo", fmt_phone: "Teléfono", fmt_sms: "SMS", fmt_whatsapp: "WhatsApp", fmt_wifi: "WiFi", fmt_geo: "Geolocalización", fmt_contact: "Contacto", fmt_event: "Evento",
                 help_geo: "Coordenadas: lat,lon", help_phone: "Teléfono/SMS/WhatsApp", close: "Cerrar",
                 alert_no_qr: "No hay ningún código QR generado para guardar.",
                 alert_copied: "¡Imagen copiada al portapapeles!",
@@ -293,7 +350,7 @@
             fr: {
                 title_save: "Enregistrer le QR Code", title_copy_image: "Copier l'image", title_copy_svg: "Copier le SVG (texte seul)",
                 title_donate: "Offrez-moi un café", title_help: "Aide", title_theme: "Changer de thème", title_lang: "Langue",
-                fg_color: "Couleur des pixels", bg_color: "Arrière-plan", logo_add: "Ajouter un logo", logo_remove: "Retirer le logo",
+                color_code: "Code", color_background: "Fond", logo_add: "Ajouter un logo", logo_remove: "Retirer le logo",
                 placeholder: "Saisissez ici le texte du QR Code...", waiting: "En attente de saisie...",
                 help_title: "qr2l - Aide",
                 help_p1: "Saisissez le texte dans le champ pour générer le QR Code.",
@@ -304,6 +361,8 @@
                 help_wifi: "WiFi : WIFI:NomDuRéseau;MotDePasse (sans mot de passe pour les réseaux ouverts)",
                 invalid_content: "Le texte ne correspond pas au type de contenu choisi", get_app: "App de bureau",
                 help_lite: "Ceci est une version allégée : l'app de bureau ajoute des formulaires pour le WiFi, les contacts et les événements, et enregistre aussi en SVG, PDF et d'autres formats.",
+                title_repo: "Ouvrir le dépôt du projet",
+                mode_text: "Texte", fmt_url: "URL", fmt_mail: "E-mail", fmt_phone: "Téléphone", fmt_sms: "SMS", fmt_whatsapp: "WhatsApp", fmt_wifi: "WiFi", fmt_geo: "Géolocalisation", fmt_contact: "Contact", fmt_event: "Événement",
                 help_geo: "Coordonnées : lat,lon", help_phone: "Téléphone/SMS/WhatsApp", close: "Fermer",
                 alert_no_qr: "Aucun QR Code généré à enregistrer.",
                 alert_copied: "Image copiée dans le presse-papiers !",
@@ -314,7 +373,7 @@
             de: {
                 title_save: "QR-Code speichern", title_copy_image: "Bild kopieren", title_copy_svg: "SVG kopieren (nur Text)",
                 title_donate: "Spendiere mir einen Kaffee", title_help: "Hilfe", title_theme: "Design wechseln", title_lang: "Sprache",
-                fg_color: "Pixelfarbe", bg_color: "Hintergrund", logo_add: "Logo hinzufügen", logo_remove: "Logo entfernen",
+                color_code: "Code", color_background: "Hintergrund", logo_add: "Logo hinzufügen", logo_remove: "Logo entfernen",
                 placeholder: "Text für den QR-Code hier eingeben...", waiting: "Warte auf Eingabe...",
                 help_title: "qr2l - Hilfe",
                 help_p1: "Gib den Text in das Feld ein, um den QR-Code zu erzeugen.",
@@ -325,6 +384,8 @@
                 help_wifi: "WLAN: WIFI:Netzwerkname;Passwort (ohne Passwort für offene Netzwerke)",
                 invalid_content: "Der Text passt nicht zum gewählten Inhaltstyp", get_app: "Desktop-App",
                 help_lite: "Dies ist eine leichte Version: Die Desktop-App bietet zusätzlich Formulare für WLAN, Kontakte und Termine und speichert auch als SVG, PDF und in weiteren Formaten.",
+                title_repo: "Projekt-Repository öffnen",
+                mode_text: "Text", fmt_url: "URL", fmt_mail: "E-Mail", fmt_phone: "Telefon", fmt_sms: "SMS", fmt_whatsapp: "WhatsApp", fmt_wifi: "WLAN", fmt_geo: "Geolokalisierung", fmt_contact: "Kontakt", fmt_event: "Termin",
                 help_geo: "Koordinaten: lat,lon", help_phone: "Telefon/SMS/WhatsApp", close: "Schließen",
                 alert_no_qr: "Kein QR-Code zum Speichern erzeugt.",
                 alert_copied: "Bild in die Zwischenablage kopiert!",
@@ -335,7 +396,7 @@
             pt: {
                 title_save: "Guardar código QR", title_copy_image: "Copiar imagem", title_copy_svg: "Copiar SVG (apenas texto)",
                 title_donate: "Paga-me um café", title_help: "Ajuda", title_theme: "Mudar tema", title_lang: "Idioma",
-                fg_color: "Cor do pixel", bg_color: "Fundo", logo_add: "Adicionar logótipo", logo_remove: "Remover logótipo",
+                color_code: "Código", color_background: "Fundo", logo_add: "Adicionar o logótipo", logo_remove: "Remover o logótipo",
                 placeholder: "Introduza aqui o texto para o código QR...", waiting: "À espera de entrada...",
                 help_title: "qr2l - Ajuda",
                 help_p1: "Introduza o texto na caixa para gerar o código QR.",
@@ -346,6 +407,8 @@
                 help_wifi: "WiFi: WIFI:NomeDaRede;Palavra-passe (sem palavra-passe para redes abertas)",
                 invalid_content: "O texto não corresponde ao tipo de conteúdo escolhido", get_app: "App para computador",
                 help_lite: "Esta é uma versão leve: a app para computador acrescenta formulários para WiFi, contactos e eventos e guarda também em SVG, PDF e outros formatos.",
+                title_repo: "Abrir o repositório do projeto",
+                mode_text: "Texto", fmt_url: "URL", fmt_mail: "Email", fmt_phone: "Telefone", fmt_sms: "SMS", fmt_whatsapp: "WhatsApp", fmt_wifi: "WiFi", fmt_geo: "Geolocalização", fmt_contact: "Contacto", fmt_event: "Evento",
                 help_geo: "Coordenadas: lat,lon", help_phone: "Telefone/SMS/WhatsApp", close: "Fechar",
                 alert_no_qr: "Nenhum código QR gerado para guardar.",
                 alert_copied: "Imagem copiada para a área de transferência!",
@@ -356,7 +419,7 @@
             ru: {
                 title_save: "Сохранить QR-код", title_copy_image: "Копировать изображение", title_copy_svg: "Копировать SVG (только текст)",
                 title_donate: "Купить мне кофе", title_help: "Справка", title_theme: "Сменить тему", title_lang: "Язык",
-                fg_color: "Цвет пикселей", bg_color: "Фон", logo_add: "Добавить логотип", logo_remove: "Убрать логотип",
+                color_code: "Код", color_background: "Фон", logo_add: "Добавить логотип", logo_remove: "Убрать логотип",
                 placeholder: "Введите здесь текст для QR-кода...", waiting: "Ожидание ввода...",
                 help_title: "qr2l - Справка",
                 help_p1: "Введите текст в поле, чтобы создать QR-код.",
@@ -367,6 +430,8 @@
                 help_wifi: "WiFi: WIFI:ИмяСети;Пароль (без пароля для открытых сетей)",
                 invalid_content: "Текст не подходит для выбранного типа содержимого", get_app: "Приложение для ПК",
                 help_lite: "Это облегчённая версия: в приложении для ПК есть формы для WiFi, контактов и событий, а также сохранение в SVG, PDF и другие форматы.",
+                title_repo: "Открыть репозиторий проекта",
+                mode_text: "Текст", fmt_url: "URL", fmt_mail: "Эл. почта", fmt_phone: "Телефон", fmt_sms: "SMS", fmt_whatsapp: "WhatsApp", fmt_wifi: "WiFi", fmt_geo: "Геолокация", fmt_contact: "Контакт", fmt_event: "Событие",
                 help_geo: "Координаты: широта,долгота", help_phone: "Телефон/SMS/WhatsApp", close: "Закрыть",
                 alert_no_qr: "Нет созданного QR-кода для сохранения.",
                 alert_copied: "Изображение скопировано в буфер обмена!",
@@ -377,7 +442,7 @@
             zh: {
                 title_save: "保存二维码", title_copy_image: "复制图片", title_copy_svg: "复制 SVG（仅文本）",
                 title_donate: "请我喝杯咖啡", title_help: "帮助", title_theme: "切换主题", title_lang: "语言",
-                fg_color: "像素颜色", bg_color: "背景", logo_add: "添加标志", logo_remove: "移除标志",
+                color_code: "码", color_background: "背景", logo_add: "添加标志", logo_remove: "移除标志",
                 placeholder: "在此输入二维码内容...", waiting: "等待输入...",
                 help_title: "qr2l - 帮助",
                 help_p1: "在文本框中输入内容以生成二维码。",
@@ -388,6 +453,8 @@
                 help_wifi: "WiFi：WIFI:网络名称;密码（开放网络无需密码）",
                 invalid_content: "文本不符合所选的内容类型", get_app: "桌面应用",
                 help_lite: "这是轻量版：桌面应用还提供 WiFi、联系人和日程的表单，并可保存为 SVG、PDF 等格式。",
+                title_repo: "打开项目仓库",
+                mode_text: "文本", fmt_url: "网址", fmt_mail: "电子邮件", fmt_phone: "电话", fmt_sms: "短信", fmt_whatsapp: "WhatsApp", fmt_wifi: "WiFi", fmt_geo: "地理位置", fmt_contact: "联系人", fmt_event: "日程",
                 help_geo: "坐标：纬度,经度", help_phone: "电话/短信/WhatsApp", close: "关闭",
                 alert_no_qr: "没有可保存的二维码。",
                 alert_copied: "图片已复制到剪贴板！",
@@ -398,7 +465,7 @@
             ja: {
                 title_save: "QRコードを保存", title_copy_image: "画像をコピー", title_copy_svg: "SVGをコピー（テキストのみ）",
                 title_donate: "コーヒーをおごる", title_help: "ヘルプ", title_theme: "テーマを切り替え", title_lang: "言語",
-                fg_color: "ピクセルの色", bg_color: "背景", logo_add: "ロゴを追加", logo_remove: "ロゴを削除",
+                color_code: "コード", color_background: "背景", logo_add: "ロゴを追加", logo_remove: "ロゴを削除",
                 placeholder: "QRコードにするテキストを入力...", waiting: "入力待ちです...",
                 help_title: "qr2l - ヘルプ",
                 help_p1: "ボックスにテキストを入力するとQRコードが生成されます。",
@@ -409,6 +476,8 @@
                 help_wifi: "WiFi: WIFI:ネットワーク名;パスワード（オープンネットワークはパスワードなし）",
                 invalid_content: "テキストが選択した種類に合いません", get_app: "デスクトップアプリ",
                 help_lite: "これは軽量版です。デスクトップアプリには WiFi・連絡先・予定のフォームがあり、SVG や PDF などの形式でも保存できます。",
+                title_repo: "プロジェクトのリポジトリを開く",
+                mode_text: "テキスト", fmt_url: "URL", fmt_mail: "メール", fmt_phone: "電話", fmt_sms: "SMS", fmt_whatsapp: "WhatsApp", fmt_wifi: "WiFi", fmt_geo: "位置情報", fmt_contact: "連絡先", fmt_event: "予定",
                 help_geo: "座標: 緯度,経度", help_phone: "電話/SMS/WhatsApp", close: "閉じる",
                 alert_no_qr: "保存できるQRコードがありません。",
                 alert_copied: "画像をクリップボードにコピーしました！",
@@ -419,7 +488,7 @@
             ko: {
                 title_save: "QR 코드 저장", title_copy_image: "이미지 복사", title_copy_svg: "SVG 복사 (텍스트만)",
                 title_donate: "커피 사주기", title_help: "도움말", title_theme: "테마 전환", title_lang: "언어",
-                fg_color: "픽셀 색상", bg_color: "배경", logo_add: "로고 추가", logo_remove: "로고 제거",
+                color_code: "코드", color_background: "배경", logo_add: "로고 추가", logo_remove: "로고 제거",
                 placeholder: "QR 코드에 넣을 텍스트를 입력하세요...", waiting: "입력을 기다리는 중...",
                 help_title: "qr2l - 도움말",
                 help_p1: "상자에 텍스트를 입력하면 QR 코드가 생성됩니다.",
@@ -430,6 +499,8 @@
                 help_wifi: "WiFi: WIFI:네트워크이름;비밀번호 (개방형 네트워크는 비밀번호 없이)",
                 invalid_content: "텍스트가 선택한 콘텐츠 유형과 맞지 않습니다", get_app: "데스크톱 앱",
                 help_lite: "이 버전은 가벼운 버전입니다. 데스크톱 앱에는 WiFi, 연락처, 일정용 양식이 있고 SVG, PDF 등 다른 형식으로도 저장할 수 있습니다.",
+                title_repo: "프로젝트 저장소 열기",
+                mode_text: "텍스트", fmt_url: "URL", fmt_mail: "이메일", fmt_phone: "전화", fmt_sms: "SMS", fmt_whatsapp: "WhatsApp", fmt_wifi: "WiFi", fmt_geo: "위치", fmt_contact: "연락처", fmt_event: "일정",
                 help_geo: "좌표: 위도,경도", help_phone: "전화/SMS/WhatsApp", close: "닫기",
                 alert_no_qr: "저장할 QR 코드가 없습니다.",
                 alert_copied: "이미지를 클립보드에 복사했습니다!",
@@ -483,12 +554,14 @@
 
             // Il pulsante logo cambia etichetta in base allo stato corrente
             document.getElementById('logo-btn-label').textContent = currentLogo ? t('logo_remove') : t('logo_add');
+            showMode(currentMode);
         }
 
         // --- State ---
         let qrObject = null;
         let debounceTimer;
         let currentLogo = null;
+        let currentMode = 'Text';
         let options = {
             text: "",
             width: 300,
@@ -507,6 +580,7 @@
 
         // --- Initialization ---
         window.onload = () => {
+            document.querySelectorAll('svg[data-icon]').forEach(svg => renderIcon(svg));
             updateThemeIcon();
             currentLang = detectLanguage();
             applyLanguage();
@@ -523,7 +597,8 @@
             const icon = document.getElementById('theme-icon');
             const isDark = document.documentElement.classList.contains('dark');
             // In tema scuro mostra il sole (per passare al chiaro), e viceversa
-            icon.className = isDark ? 'fas fa-sun text-yellow-500' : 'fas fa-moon text-indigo-500';
+            icon.style.color = isDark ? 'goldenrod' : '#6C7AE0';
+            renderIcon(icon, isDark ? 'white-balance-sunny' : 'weather-night');
         }
 
         // --- Generazione ---
@@ -542,12 +617,12 @@
 
             if (!text) {
                 container.innerHTML = `<div class="text-gray-500 dark:text-gray-400 text-sm italic" data-i18n="waiting">${t('waiting')}</div>`;
-                document.getElementById('detected-mode').innerText = MODE_NAMES.Text;
+                showMode('Text');
                 return;
             }
 
             const mode = detectPayloadMode(text);
-            document.getElementById('detected-mode').innerText = MODE_NAMES[mode];
+            showMode(mode);
 
             try {
                 options.text = preparePayload(text, mode);
@@ -561,10 +636,66 @@
 
         // --- Contenuti: gli stessi formati dell'app desktop (qr2l.Core/QrGenerator.cs e Payloads.cs) ---
 
-        const MODE_NAMES = {
-            Text: 'Text', Url: 'URL', Mail: 'Email', Phone: 'Phone', SMS: 'SMS', WhatsApp: 'WhatsApp',
-            WiFi: 'WiFi', Geolocation: 'Geolocation', ContactData: 'Contact', Event: 'Event'
+        // Nome, icona e colore di ogni tipo, come nella barra di stato dell'app
+        const MODE_STYLE = {
+            Text: ['mode_text', 'text', '#7A7F87'], Url: ['fmt_url', 'link', '#2F6FD6'], Mail: ['fmt_mail', 'email', '#E0453A'],
+            Phone: ['fmt_phone', 'phone', '#2E9E5B'], SMS: ['fmt_sms', 'message-text', '#1E9EA8'],
+            WhatsApp: ['fmt_whatsapp', 'whatsapp', '#25A55F'], WiFi: ['fmt_wifi', 'wifi', '#6C7AE0'],
+            Geolocation: ['fmt_geo', 'map-marker', '#E07B2E'], ContactData: ['fmt_contact', 'card-account-details', '#B0851E'],
+            Event: ['fmt_event', 'calendar-month', '#D14B8F']
         };
+
+        function showMode(mode) {
+            const [key, icon, color] = MODE_STYLE[mode];
+            const svg = document.getElementById('mode-icon');
+
+            currentMode = mode;
+            document.getElementById('detected-mode').textContent = t(key);
+            svg.style.color = color;
+            renderIcon(svg, icon);
+        }
+
+        // Forme delle icone: le stesse della libreria usata dall'app (Material Design Icons)
+        const ICONS = {
+            'content-save': 'M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z',
+            'content-copy': 'M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z',
+            'xml': 'M12.89,3L14.85,3.4L11.11,21L9.15,20.6L12.89,3M19.59,12L16,8.41V5.58L22.42,12L16,18.41V15.58L19.59,12M1.58,12L8,5.58V8.41L4.41,12L8,15.58V18.41L1.58,12Z',
+            'help-circle': 'M15.07,11.25L14.17,12.17C13.45,12.89 13,13.5 13,15H11V14.5C11,13.39 11.45,12.39 12.17,11.67L13.41,10.41C13.78,10.05 14,9.55 14,9C14,7.89 13.1,7 12,7A2,2 0 0,0 10,9H8A4,4 0 0,1 12,5A4,4 0 0,1 16,9C16,9.88 15.64,10.67 15.07,11.25M13,19H11V17H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12C22,6.47 17.5,2 12,2Z',
+            'web': 'M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.59,19.56C15.19,18.45 15.65,17.25 15.97,16H18.92C17.96,17.65 16.43,18.93 14.59,19.56M14.34,14H9.66C9.56,13.34 9.5,12.68 9.5,12C9.5,11.32 9.56,10.65 9.66,10H14.34C14.43,10.65 14.5,11.32 14.5,12C14.5,12.68 14.43,13.34 14.34,14M12,19.96C11.17,18.76 10.5,17.43 10.09,16H13.91C13.5,17.43 12.83,18.76 12,19.96M8,8H5.08C6.03,6.34 7.57,5.06 9.4,4.44C8.8,5.55 8.35,6.75 8,8M5.08,16H8C8.35,17.25 8.8,18.45 9.4,19.56C7.57,18.93 6.03,17.65 5.08,16M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,4.03C12.83,5.23 13.5,6.57 13.91,8H10.09C10.5,6.57 11.17,5.23 12,4.03M18.92,8H15.97C15.65,6.75 15.19,5.55 14.59,4.44C16.43,5.07 17.96,6.34 18.92,8M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z',
+            'weather-night': 'M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z',
+            'white-balance-sunny': 'M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13',
+            'github': 'M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z',
+            'heart': 'M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z',
+            'qrcode': 'M3,11H5V13H3V11M11,5H13V9H11V5M9,11H13V15H11V13H9V11M15,11H17V13H19V11H21V13H19V15H21V19H19V21H17V19H13V21H11V17H15V15H17V13H15V11M19,19V15H17V19H19M15,3H21V9H15V3M17,5V7H19V5H17M3,3H9V9H3V3M5,5V7H7V5H5M3,15H9V21H3V15M5,17V19H7V17H5Z',
+            'format-color-fill': 'M19,11.5C19,11.5 17,13.67 17,15A2,2 0 0,0 19,17A2,2 0 0,0 21,15C21,13.67 19,11.5 19,11.5M5.21,10L10,5.21L14.79,10M16.56,8.94L7.62,0L6.21,1.41L8.59,3.79L3.44,8.94C2.85,9.5 2.85,10.47 3.44,11.06L8.94,16.56C9.23,16.85 9.62,17 10,17C10.38,17 10.77,16.85 11.06,16.56L16.56,11.06C17.15,10.47 17.15,9.5 16.56,8.94Z',
+            'image': 'M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z',
+            'image-remove': 'M13.3 21H5C3.9 21 3 20.1 3 19V5C3 3.9 3.9 3 5 3H19C20.1 3 21 3.9 21 5V13.3C20.4 13.1 19.7 13 19 13C17.9 13 16.8 13.3 15.9 13.9L14.5 12L11 16.5L8.5 13.5L5 18H13.1C13 18.3 13 18.7 13 19C13 19.7 13.1 20.4 13.3 21M20.4 19L22.5 21.1L21.1 22.5L19 20.4L16.9 22.5L15.5 21.1L17.6 19L15.5 16.9L16.9 15.5L19 17.6L21.1 15.5L22.5 16.9L20.4 19Z',
+            'download': 'M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z',
+            'text': 'M21,6V8H3V6H21M3,18H12V16H3V18M3,13H21V11H3V13Z',
+            'link': 'M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z',
+            'email': 'M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z',
+            'phone': 'M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z',
+            'message-text': 'M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M6,9H18V11H6M14,14H6V12H14M18,8H6V6H18',
+            'whatsapp': 'M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 15 3.8 13.47 3.8 11.91C3.81 7.37 7.5 3.67 12.05 3.67M8.53 7.33C8.37 7.33 8.1 7.39 7.87 7.64C7.65 7.89 7 8.5 7 9.71C7 10.93 7.89 12.1 8 12.27C8.14 12.44 9.76 14.94 12.25 16C12.84 16.27 13.3 16.42 13.66 16.53C14.25 16.72 14.79 16.69 15.22 16.63C15.7 16.56 16.68 16.03 16.89 15.45C17.1 14.87 17.1 14.38 17.04 14.27C16.97 14.17 16.81 14.11 16.56 14C16.31 13.86 15.09 13.26 14.87 13.18C14.64 13.1 14.5 13.06 14.31 13.3C14.15 13.55 13.67 14.11 13.53 14.27C13.38 14.44 13.24 14.46 13 14.34C12.74 14.21 11.94 13.95 11 13.11C10.26 12.45 9.77 11.64 9.62 11.39C9.5 11.15 9.61 11 9.73 10.89C9.84 10.78 10 10.6 10.1 10.45C10.23 10.31 10.27 10.2 10.35 10.04C10.43 9.87 10.39 9.73 10.33 9.61C10.27 9.5 9.77 8.26 9.56 7.77C9.36 7.29 9.16 7.35 9 7.34C8.86 7.34 8.7 7.33 8.53 7.33Z',
+            'wifi': 'M12,21L15.6,16.2C14.6,15.45 13.35,15 12,15C10.65,15 9.4,15.45 8.4,16.2L12,21M12,3C7.95,3 4.21,4.34 1.2,6.6L3,9C5.5,7.12 8.62,6 12,6C15.38,6 18.5,7.12 21,9L22.8,6.6C19.79,4.34 16.05,3 12,3M12,9C9.3,9 6.81,9.89 4.8,11.4L6.6,13.8C8.1,12.67 9.97,12 12,12C14.03,12 15.9,12.67 17.4,13.8L19.2,11.4C17.19,9.89 14.7,9 12,9Z',
+            'map-marker': 'M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z',
+            'card-account-details': 'M2,3H22C23.05,3 24,3.95 24,5V19C24,20.05 23.05,21 22,21H2C0.95,21 0,20.05 0,19V5C0,3.95 0.95,3 2,3M14,6V7H22V6H14M14,8V9H21.5L22,9V8H14M14,10V11H21V10H14M8,13.91C6,13.91 2,15 2,17V18H14V17C14,15 10,13.91 8,13.91M8,6A3,3 0 0,0 5,9A3,3 0 0,0 8,12A3,3 0 0,0 11,9A3,3 0 0,0 8,6Z',
+            'calendar-month': 'M9,10V12H7V10H9M13,10V12H11V10H13M17,10V12H15V10H17M19,3A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5A2,2 0 0,1 5,3H6V1H8V3H16V1H18V3H19M19,19V8H5V19H19M9,14V16H7V14H9M13,14V16H11V14H13M17,14V16H15V14H17Z'
+        };
+
+        // Con la classe glyph il riquadro si adatta al contorno del simbolo, come nell'app; glyph-box resta nel quadrato
+        function renderIcon(svg, name) {
+            if (name) svg.dataset.icon = name;
+            svg.innerHTML = `<path d="${ICONS[svg.dataset.icon]}"/>`;
+
+            if (!svg.classList.contains('glyph')) {
+                svg.setAttribute('viewBox', '0 0 24 24');
+                return;
+            }
+
+            const box = svg.firstChild.getBBox();
+            svg.setAttribute('viewBox', `${box.x} ${box.y} ${box.width} ${box.height}`);
+        }
 
         const URL_SCHEMES = ['http://', 'https://', 'ftp://', 'ftps://', 'file://'];
 
@@ -826,7 +957,7 @@
             if (currentLogo) {
                 currentLogo = null;
                 document.getElementById('logo-btn-label').textContent = t('logo_add');
-                document.getElementById('logo-btn-icon').className = 'fas fa-image mr-1.5 opacity-80';
+                renderIcon(document.getElementById('logo-btn-icon'), 'image');
                 btn.classList.remove('bg-red-100', 'text-red-700', 'dark:bg-red-900', 'dark:text-red-200');
                 btn.classList.add('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-200');
                 document.getElementById('logo-upload').value = ""; // reset input
@@ -845,7 +976,7 @@
                     // Update UI button
                     const btn = document.getElementById('logo-btn');
                     document.getElementById('logo-btn-label').textContent = t('logo_remove');
-                    document.getElementById('logo-btn-icon').className = 'fas fa-trash mr-1.5 opacity-80';
+                    renderIcon(document.getElementById('logo-btn-icon'), 'image-remove');
                     btn.classList.remove('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-200');
                     btn.classList.add('bg-red-100', 'text-red-700', 'dark:bg-red-900', 'dark:text-red-200');
                     

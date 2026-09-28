@@ -10,6 +10,7 @@ ProductCode: '{7A1E6C0B-3F4D-4B7E-9C2A-5D8F1E2B6C41}_is1'
 Commands:
 - qr2l
 - qr2l-gui
+ReleaseDate: $(ReleaseDate)
 Installers:
 - Architecture: x64
   InstallerUrl: https://github.com/stefanocaronia/qr2l/releases/download/$(Tag)/qr2l-v$(Version)-win-x64-setup.exe

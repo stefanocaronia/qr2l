@@ -77,7 +77,7 @@ The version is defined once in `Directory.Build.props` and inherited by all proj
    ```
 
 The release workflow does the rest, winget included. The winget manifests live in `packaging/winget`: package name,
-description and installer are edited there, and at release time the script fills in the version and the installer
-checksum and submits them. To submit a version again, run the *Update winget package* workflow from the Actions tab
+description and installer are edited there, and at release time the script fills in the version, the release date
+and the installer checksum and submits them. To submit a version again, run the *Update winget package* workflow from the Actions tab
 with the release tag. Run locally without a token, `packaging/winget/update.ps1 -Tag <version>` only writes the
 manifests, to check them with `winget validate`.

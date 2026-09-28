@@ -59,10 +59,22 @@ jobs:
         run: |
           $setup = Get-Item bin\qr2l-v*-win-x64-setup.exe
           $target = "$env:RUNNER_TEMP\qr2l-install"
-          Start-Process -Wait -FilePath $setup.FullName -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$target"
+          $silent = "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"
+          function PathCopies { @([Environment]::GetEnvironmentVariable("Path", "User") -split ';' | Where-Object { $_.TrimEnd('\') -eq $target }).Count }
+
+          # Installed twice, as an upgrade does: the folder must be in the PATH once
+          Start-Process -Wait -FilePath $setup.FullName -ArgumentList ($silent + "/DIR=$target")
+          Start-Process -Wait -FilePath $setup.FullName -ArgumentList ($silent + "/DIR=$target")
+          if ((PathCopies) -ne 1) { throw "Install folder found $(PathCopies) times in the PATH" }
+
           & "$target\qr2l.exe" "https://github.com/stefanocaronia/qr2l" "$env:RUNNER_TEMP\setup-test.png"
           if (-not (Test-Path "$env:RUNNER_TEMP\setup-test.png")) { throw "Installed CLI did not produce output" }
-          Start-Process -Wait -FilePath "$target\unins000.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"
+
+          # The uninstaller hands over to a copy of itself and returns at once: wait for its PATH cleanup
+          Start-Process -Wait -FilePath "$target\unins000.exe" -ArgumentList $silent
+          $deadline = (Get-Date).AddMinutes(1)
+          while ((PathCopies) -ne 0 -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
+          if ((PathCopies) -ne 0) { throw "The uninstaller left the install folder in the PATH" }
 
       - name: Upload packages
         uses: actions/upload-artifact@v4

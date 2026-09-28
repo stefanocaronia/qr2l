@@ -76,7 +76,8 @@ begin
     Result := HKEY_CURRENT_USER;
 end;
 
-{ True when the directory is not already part of the PATH }
+{ True when the directory is not already part of the PATH. Constants in Check parameters are not
+  expanded by Inno: without ExpandConstant every upgrade would add the directory again }
 function NeedsAddPath(Param: string): Boolean;
 var
   CurrentPath: string;
@@ -86,24 +87,40 @@ begin
     Result := True;
     exit;
   end;
-  Result := Pos(';' + Uppercase(Param) + ';', ';' + Uppercase(CurrentPath) + ';') = 0;
+  Result := Pos(';' + Uppercase(ExpandConstant(Param)) + ';', ';' + Uppercase(CurrentPath) + ';') = 0;
 end;
 
-{ Removes the application directory from the PATH on uninstall }
+{ Removes every copy of the application directory from the PATH on uninstall, leaving the other entries as they were }
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
-  CurrentPath, AppDir: string;
-  Position: Integer;
+  CurrentPath, Remaining, Entry, Cleaned, AppDir: string;
+  Separator: Integer;
+  Removed, First: Boolean;
 begin
   if CurUninstallStep <> usPostUninstall then
     exit;
   if not RegQueryStringValue(PathRootKey, PathSubKey, 'Path', CurrentPath) then
     exit;
-  AppDir := ExpandConstant('{app}');
-  Position := Pos(';' + Uppercase(AppDir), Uppercase(CurrentPath));
-  if Position > 0 then
+  AppDir := Uppercase(ExpandConstant('{app}'));
+  Remaining := CurrentPath + ';';
+  Cleaned := '';
+  Removed := False;
+  First := True;
+  while Remaining <> '' do
   begin
-    Delete(CurrentPath, Position, Length(AppDir) + 1);
-    RegWriteExpandStringValue(PathRootKey, PathSubKey, 'Path', CurrentPath);
+    Separator := Pos(';', Remaining);
+    Entry := Copy(Remaining, 1, Separator - 1);
+    Delete(Remaining, 1, Separator);
+    if (Entry <> '') and (Uppercase(RemoveBackslashUnlessRoot(Entry)) = AppDir) then
+      Removed := True
+    else
+    begin
+      if not First then
+        Cleaned := Cleaned + ';';
+      Cleaned := Cleaned + Entry;
+      First := False;
+    end;
   end;
+  if Removed then
+    RegWriteExpandStringValue(PathRootKey, PathSubKey, 'Path', Cleaned);
 end;

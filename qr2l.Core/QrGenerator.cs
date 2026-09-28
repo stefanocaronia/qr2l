@@ -8,6 +8,9 @@ namespace qr2l.Core;
 
 public static class QrGenerator
 {
+    // Un testo che inizia così è già un indirizzo completo: niente https:// davanti
+    private static readonly string[] UrlSchemes = ["http://", "https://", "ftp://", "ftps://", "file://"];
+
     public static byte[] Generate(string text, ExportFormat format, QrCodeOptions? options = null)
     {
         options ??= new QrCodeOptions();
@@ -62,7 +65,7 @@ public static class QrGenerator
 
         return mode switch {
             PayloadMode.Text => text,
-            PayloadMode.Url => Payloads.StartsWithAny(text, "http://", "https://") ? text : $"https://{text}",
+            PayloadMode.Url => Payloads.StartsWithAny(text, UrlSchemes) ? text : $"https://{text}",
             PayloadMode.Mail => PrepareMailPayload(text),
             PayloadMode.SMS => PrepareSmsPayload(text),
             PayloadMode.Phone => PreparePhonePayload(text),
@@ -89,7 +92,7 @@ public static class QrGenerator
         }
 
         // URL detection with explicit protocol
-        if (Payloads.StartsWithAny(text, "http://", "https://", "ftp://", "ftps://", "file://")) {
+        if (Payloads.StartsWithAny(text, UrlSchemes)) {
             return PayloadMode.Url;
         }
 

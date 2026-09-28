@@ -242,6 +242,7 @@ public class PayloadsTests
     }
 
     [Theory]
+    [InlineData(PayloadMode.Url, "ftp://files.example.com/qr2l.zip")]
     [InlineData(PayloadMode.Mail, "mailto:info@example.com?subject=Ciao%20Mario")]
     [InlineData(PayloadMode.SMS, "SMSTO:+393331234567:Ciao")]
     [InlineData(PayloadMode.WhatsApp, "https://wa.me/393331234567")]

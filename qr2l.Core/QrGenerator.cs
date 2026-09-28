@@ -59,10 +59,10 @@ public static class QrGenerator
         if (mode == PayloadMode.Auto) {
             mode = DetectPayloadMode(text);
         }
-        
+
         return mode switch {
             PayloadMode.Text => text,
-            PayloadMode.Url => text.StartsWith("http://") || text.StartsWith("https://") ? text : $"https://{text}",
+            PayloadMode.Url => Payloads.StartsWithAny(text, "http://", "https://") ? text : $"https://{text}",
             PayloadMode.Mail => PrepareMailPayload(text),
             PayloadMode.SMS => PrepareSmsPayload(text),
             PayloadMode.Phone => PreparePhonePayload(text),
@@ -74,50 +74,44 @@ public static class QrGenerator
             var _ => text
         };
     }
-    
+
     public static PayloadMode DetectPayloadMode(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) {
             return PayloadMode.Text;
         }
-        
+
         text = text.Trim();
-        
-        // URL detection with explicit protocol must come first
-        if (text.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-            text.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
-            text.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase) ||
-            text.StartsWith("ftps://", StringComparison.OrdinalIgnoreCase) ||
-            text.StartsWith("file://", StringComparison.OrdinalIgnoreCase)) {
+
+        // I formati completi si riconoscono dal prefisso. Vengono prima degli URL perché anche i link WhatsApp lo sono
+        if (DetectByPrefix(text) is { } prefixed) {
+            return prefixed;
+        }
+
+        // URL detection with explicit protocol
+        if (Payloads.StartsWithAny(text, "http://", "https://", "ftp://", "ftps://", "file://")) {
             return PayloadMode.Url;
         }
-        
-        // Email detection
-        if (text.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)) {
+
+        // Email detection: un indirizzo, da solo o seguito da oggetto e messaggio
+        if (Payloads.LooksLikeEmail(text.Split(';', 2)[0].Trim())) {
             return PayloadMode.Mail;
         }
-        
-        if (text.Contains('@') && !text.Contains(';')) {
-            string[] atParts = text.Split('@');
-            if (atParts.Length == 2 && atParts[1].Contains('.') && !atParts[1].Contains(' ')) {
-                return PayloadMode.Mail;
-            }
-        }
-        
+
         // URL detection without explicit protocol
         if (text.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ||
             (text.Contains('.') && !text.Contains(' ') && !text.Contains(';') && !text.Contains('@') &&
-             (text.EndsWith(".com") || text.EndsWith(".net") || text.EndsWith(".org") || 
-              text.EndsWith(".io") || text.EndsWith(".it") || text.Contains(".com/") || 
+             (text.EndsWith(".com") || text.EndsWith(".net") || text.EndsWith(".org") ||
+              text.EndsWith(".io") || text.EndsWith(".it") || text.Contains(".com/") ||
               text.Contains(".net/") || text.Contains(".org/") || text.Contains(".io/")))) {
             return PayloadMode.Url;
         }
-        
+
         // Geolocation detection: lat,lon format (decimals with point as separator)
         if (text.Contains(',') && !text.Contains(';')) {
             string[] parts = text.Split(',');
             if (parts.Length >= 2 && parts.Length <= 3) {
-                if (double.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double lat) && 
+                if (double.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double lat) &&
                     double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double lon)) {
                     if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
                         return PayloadMode.Geolocation;
@@ -125,34 +119,29 @@ public static class QrGenerator
                 }
             }
         }
-        
+
         // Phone detection: only digits, spaces, +, -, (, )
         string phonePattern = text.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "");
         if (phonePattern.Length >= 7 && phonePattern.All(char.IsDigit) && !text.Contains(';') && !text.Contains(',')) {
             return PayloadMode.Phone;
         }
-        
-        // WiFi detection: must start with WIFI: prefix or have complete format
-        if (text.StartsWith("WIFI:", StringComparison.OrdinalIgnoreCase)) {
-            return PayloadMode.WiFi;
-        }
-        
+
         // Structured data with semicolons
         if (text.Contains(';')) {
             string[] parts = text.Split(';');
-            
+
             // WhatsApp detection: starts with + followed by digits
-            if (parts.Length >= 1 && parts[0].Trim().StartsWith("+") && 
+            if (parts.Length >= 1 && parts[0].Trim().StartsWith("+") &&
                 parts[0].Trim().Substring(1).Replace(" ", "").All(char.IsDigit)) {
                 return PayloadMode.WhatsApp;
             }
-            
+
             // SMS detection: phone number followed by message
             string firstPart = parts[0].Trim().Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "");
             if (firstPart.Length >= 7 && firstPart.All(char.IsDigit)) {
                 return PayloadMode.SMS;
             }
-            
+
             // Event detection: contains date-like patterns (ISO format)
             if (parts.Length >= 3) {
                 foreach (string part in parts) {
@@ -161,7 +150,7 @@ public static class QrGenerator
                     }
                 }
             }
-            
+
             // ContactData detection: 2+ parts, looks like name/contact info
             if (parts.Length >= 2 && parts.Length <= 4) {
                 bool hasEmail = parts.Any(p => p.Contains('@'));
@@ -169,196 +158,167 @@ public static class QrGenerator
                     string clean = p.Trim().Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "");
                     return clean.Length >= 7 && clean.All(char.IsDigit);
                 });
-                
+
                 if (hasEmail || hasPhone) {
                     return PayloadMode.ContactData;
                 }
             }
         }
-        
+
         // Default to Text
         return PayloadMode.Text;
     }
-    
+
+    private static PayloadMode? DetectByPrefix(string text)
+    {
+        if (Payloads.StartsWithAny(text, "WIFI:")) {
+            return PayloadMode.WiFi;
+        }
+
+        if (Payloads.StartsWithAny(text, "mailto:", "MATMSG:")) {
+            return PayloadMode.Mail;
+        }
+
+        if (Payloads.StartsWithAny(text, "sms:", "SMSTO:")) {
+            return PayloadMode.SMS;
+        }
+
+        if (Payloads.StartsWithAny(text, "tel:")) {
+            return PayloadMode.Phone;
+        }
+
+        if (Payloads.StartsWithAny(text, "geo:")) {
+            return PayloadMode.Geolocation;
+        }
+
+        if (Payloads.StartsWithAny(text, "BEGIN:VCARD", "MECARD:")) {
+            return PayloadMode.ContactData;
+        }
+
+        if (Payloads.StartsWithAny(text, "BEGIN:VEVENT", "BEGIN:VCALENDAR")) {
+            return PayloadMode.Event;
+        }
+
+        if (Payloads.IsWhatsAppLink(text)) {
+            return PayloadMode.WhatsApp;
+        }
+
+        return null;
+    }
+
+    // Per i tipi con più campi, un formato completo (link o scheda) si usa così com'è;
+    // quello semplificato con i punti e virgola viene letto e riscritto nel formato completo.
+
     private static string PrepareMailPayload(string text)
     {
-        if (text.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)) {
-            text = text.Substring(7);
+        if (Payloads.StartsWithAny(text, "mailto:", "MATMSG:")) {
+            return text;
         }
-        
-        string[] parts = text.Split(';');
-        string email = parts[0].Trim();
-        string subject = parts.Length > 1 ? parts[1].Trim() : string.Empty;
-        string body = parts.Length > 2 ? parts[2].Trim() : string.Empty;
-        
-        var generator = new PayloadGenerator.Mail(email, subject, body);
-        return generator.ToString();
+
+        Payloads.TryParseMail(text, out MailMessage mail);
+        return Payloads.BuildMail(mail);
     }
-    
+
     private static string PrepareSmsPayload(string text)
     {
-        // Format: number;message
-        string[] parts = text.Split(';');
-        if (parts.Length < 1) {
-            throw new ArgumentException("SMS payload must be in format: number;message");
+        if (Payloads.StartsWithAny(text, "sms:", "SMSTO:")) {
+            return text;
         }
-        
-        string number = parts[0].Trim();
-        string message = parts.Length > 1 ? parts[1].Trim() : string.Empty;
-        
-        var generator = new PayloadGenerator.SMS(number, message);
-        return generator.ToString();
+
+        Payloads.TryParseSms(text, out TextMessage sms);
+        return Payloads.BuildSms(sms);
     }
-    
+
     private static string PreparePhonePayload(string text)
     {
+        if (Payloads.StartsWithAny(text, "tel:")) {
+            return text;
+        }
+
         var generator = new PayloadGenerator.PhoneNumber(text.Trim());
         return generator.ToString();
     }
-    
+
     private static string PrepareGeolocationPayload(string text)
     {
+        if (Payloads.StartsWithAny(text, "geo:")) {
+            return text;
+        }
+
         // Format: latitude,longitude or latitude,longitude,altitude
         string[] parts = text.Split(',');
         if (parts.Length < 2) {
             throw new ArgumentException("Geolocation payload must be in format: latitude,longitude");
         }
-        
+
         string latitude = parts[0].Trim();
         string longitude = parts[1].Trim();
-        
+
         var generator = new PayloadGenerator.Geolocation(latitude, longitude);
         return generator.ToString();
     }
-    
+
     private static string PrepareContactDataPayload(string text)
     {
-        // Format: firstName;lastName;phone;email (minimal vCard)
-        string[] parts = text.Split(';');
-        if (parts.Length < 2) {
-            throw new ArgumentException("ContactData payload must be in format: firstName;lastName;phone;email");
+        if (Payloads.StartsWithAny(text, "BEGIN:VCARD", "MECARD:")) {
+            return text;
         }
-        
-        string firstName = parts[0].Trim();
-        string lastName = parts.Length > 1 ? parts[1].Trim() : string.Empty;
-        string phone = parts.Length > 2 ? parts[2].Trim() : string.Empty;
-        string email = parts.Length > 3 ? parts[3].Trim() : string.Empty;
-        
-        var generator = new PayloadGenerator.ContactData(
-            PayloadGenerator.ContactData.ContactOutputType.VCard3,
-            firstName,
-            lastName,
-            phone: phone,
-            email: email
-        );
-        return generator.ToString();
+
+        Payloads.TryParseContact(text, out ContactCard card);
+        return Payloads.BuildContact(card);
     }
-    
+
     private static string PrepareEventPayload(string text)
     {
-        // Format: subject;description;location;startDateTime;endDateTime (ISO format for dates)
-        string[] parts = text.Split(';');
-        if (parts.Length < 3) {
-            throw new ArgumentException("Event payload must be in format: subject;description;location;startDateTime;endDateTime");
+        if (Payloads.StartsWithAny(text, "BEGIN:VEVENT", "BEGIN:VCALENDAR")) {
+            return text;
         }
-        
-        string subject = parts[0].Trim();
-        string description = parts.Length > 1 ? parts[1].Trim() : string.Empty;
-        string location = parts.Length > 2 ? parts[2].Trim() : string.Empty;
-        DateTime start = parts.Length > 3 ? DateTime.Parse(parts[3].Trim()) : DateTime.Now;
-        DateTime end = parts.Length > 4 ? DateTime.Parse(parts[4].Trim()) : start.AddHours(1);
-        
-        var generator = new PayloadGenerator.CalendarEvent(subject, description, location, start, end, false);
-        return generator.ToString();
+
+        if (!Payloads.TryParseEvent(text, out CalendarEntry entry)) {
+            throw new ArgumentException("Event payload must be in format: title;description;location;start;end (dates like 2026-10-01 18:00)");
+        }
+
+        return Payloads.BuildEvent(entry);
     }
-    
+
     private static string PrepareWhatsAppPayload(string text)
     {
-        string[] parts = text.Split(';');
-        if (parts.Length < 1) {
-            throw new ArgumentException("WhatsApp payload must be in format: number;message");
+        if (Payloads.IsWhatsAppLink(text)) {
+            return text;
         }
-        
-        string number = parts[0].Trim();
-        string message = parts.Length > 1 ? parts[1].Trim() : string.Empty;
-        
-        var generator = new PayloadGenerator.WhatsAppMessage(number, message);
-        return generator.ToString();
+
+        Payloads.TryParseWhatsApp(text, out TextMessage message);
+        return Payloads.BuildWhatsApp(message);
     }
 
     private static string PrepareWiFiPayload(string text, QrCodeOptions? options)
     {
-        // Già nel formato completo: si usa così com'è
-        if (text.StartsWith("WIFI:T:", StringComparison.OrdinalIgnoreCase)) {
+        text = text.Trim();
+
+        // Già nel formato completo: si usa così com'è, purché indichi la rete
+        if (Payloads.IsCompleteWiFiFormat(text)) {
+            if (!Payloads.TryParseWiFi(text, out WiFiNetwork network) || network.Ssid.Length == 0) {
+                throw new ArgumentException("The WiFi network name (S:) is missing.");
+            }
+
             return text;
         }
 
         if (text.StartsWith("WIFI:", StringComparison.OrdinalIgnoreCase)) {
-            text = text.Substring(5);
+            text = text[5..];
         }
 
-        // Formato semplificato "rete;password": la rete arriva fino al primo punto e virgola e tutto
-        // il resto è la password, che quindi può contenere a sua volta dei punti e virgola
-        int separator = text.IndexOf(';');
-        string ssid = (separator < 0 ? text : text[..separator]).Trim();
-        string password = separator < 0 ? string.Empty : text[(separator + 1)..].Trim();
+        (string ssid, string password) = Payloads.SplitSimplifiedWiFi(text);
 
         if (ssid.Length == 0) {
             throw new ArgumentException("WiFi payload must be in format: WIFI:ssid;password (password optional for open networks)");
         }
 
-        return BuildWiFiPayload(
+        return Payloads.BuildWiFi(new WiFiNetwork(
             ssid,
             password,
             options?.wifiAuthType ?? WiFiAuthenticationType.WPA,
-            options?.wifiHidden ?? false);
-    }
-
-    /// <summary>
-    /// Compone il testo che i telefoni leggono per collegarsi a una rete:
-    /// <c>WIFI:T:protezione;S:rete;P:password;H:true;;</c>, dove H compare solo per le reti nascoste.
-    /// </summary>
-    internal static string BuildWiFiPayload(string ssid, string password, WiFiAuthenticationType authentication, bool hidden)
-    {
-        // Senza password la rete è aperta, qualunque protezione sia stata indicata
-        WiFiAuthenticationType effective = password.Length == 0 ? WiFiAuthenticationType.NoPassword : authentication;
-
-        string type = effective switch {
-            WiFiAuthenticationType.WEP => "WEP",
-            WiFiAuthenticationType.NoPassword => "nopass",
-            var _ => "WPA"
-        };
-
-        var payload = new StringBuilder($"WIFI:T:{type};S:{EscapeWiFiValue(ssid)};");
-
-        if (effective != WiFiAuthenticationType.NoPassword) {
-            payload.Append($"P:{EscapeWiFiValue(password)};");
-        }
-
-        if (hidden) {
-            payload.Append("H:true;");
-        }
-
-        return payload.Append(';').ToString();
-    }
-
-    /// <summary>
-    /// Nel formato WiFi i caratteri \ ; , : e " fanno da separatori: dentro nome e password
-    /// vanno preceduti da una barra rovesciata, altrimenti il telefono legge un valore sbagliato.
-    /// </summary>
-    private static string EscapeWiFiValue(string value)
-    {
-        var escaped = new StringBuilder(value.Length);
-
-        foreach (char character in value) {
-            if (character is '\\' or ';' or ',' or ':' or '"') {
-                escaped.Append('\\');
-            }
-
-            escaped.Append(character);
-        }
-
-        return escaped.ToString();
+            options?.wifiHidden ?? false));
     }
 
     private static QRCodeGenerator.ECCLevel ConvertErrorCorrectionLevel(ErrorCorrectionLevel level)

@@ -124,7 +124,7 @@ Packaging, the project structure and the release process are described in [CONTR
 
 ## Development notes
 
-Developed with the help of AI coding agents. Everything is designed, reviewed and tested by the project maintainer.
+Developed with the help of AI coding agents. Everything is designed, reviewed and tested by the project's human maintainer.
 
 **We encourage everyone to use AI for their own purposes.**  
 The means of production should belong to the people.  

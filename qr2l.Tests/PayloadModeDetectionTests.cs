@@ -24,7 +24,6 @@ public class PayloadModeDetectionTests
     [InlineData("example.com", PayloadMode.Url)]
     [InlineData("github.io/project", PayloadMode.Url)]
     [InlineData("site.net/page", PayloadMode.Url)]
-    [InlineData("https://www.google.com/maps/@45.5392001,9.2430083,15z?hl=it&entry=ttu&g_ep=EgoyMDI1MTExMi4wIKXMDSoASAFQAw%3D%3D", PayloadMode.Url)]
     [InlineData("http://localhost:8080", PayloadMode.Url)]
     [InlineData("https://user:password@example.com/path", PayloadMode.Url)]
     [InlineData("http://192.168.1.1", PayloadMode.Url)]
@@ -45,6 +44,7 @@ public class PayloadModeDetectionTests
     [InlineData("90,180", PayloadMode.Geolocation)]
     [InlineData("-90,-180", PayloadMode.Geolocation)]
     [InlineData("45.123456,9.987654", PayloadMode.Geolocation)]
+    [InlineData("https://www.google.com/maps/@45.5392001,9.2430083,15z?hl=it&entry=ttu&g_ep=EgoyMDI1MTExMi4wIKXMDSoASAFQAw%3D%3D", PayloadMode.Geolocation)]
     public void DetectPayloadMode_Geolocation_ShouldReturnGeolocation(string input, PayloadMode expected)
     {
         PayloadMode result = QrGenerator.DetectPayloadMode(input);

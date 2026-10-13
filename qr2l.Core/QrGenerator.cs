@@ -111,16 +111,8 @@ public static class QrGenerator
         }
 
         // Geolocation detection: lat,lon format (decimals with point as separator)
-        if (text.Contains(',') && !text.Contains(';')) {
-            string[] parts = text.Split(',');
-            if (parts.Length >= 2 && parts.Length <= 3) {
-                if (double.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double lat) &&
-                    double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double lon)) {
-                    if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-                        return PayloadMode.Geolocation;
-                    }
-                }
-            }
+        if (!text.Contains(';') && Payloads.LooksLikeCoordinates(text)) {
+            return PayloadMode.Geolocation;
         }
 
         // Phone detection: only digits, spaces, +, -, (, )
@@ -190,7 +182,7 @@ public static class QrGenerator
             return PayloadMode.Phone;
         }
 
-        if (Payloads.StartsWithAny(text, "geo:")) {
+        if (Payloads.StartsWithAny(text, "geo:") || Payloads.IsMapLink(text)) {
             return PayloadMode.Geolocation;
         }
 
@@ -244,20 +236,17 @@ public static class QrGenerator
 
     private static string PrepareGeolocationPayload(string text)
     {
-        if (Payloads.StartsWithAny(text, "geo:")) {
+        if (Payloads.StartsWithAny(text, "geo:") || Payloads.IsMapLink(text)) {
             return text;
         }
 
-        // Format: latitude,longitude or latitude,longitude,altitude
-        string[] parts = text.Split(',');
-        if (parts.Length < 2) {
-            throw new ArgumentException("Geolocation payload must be in format: latitude,longitude");
+        // Coordinate "lat,lon": il formato geo: standard; qualunque altro testo è un indirizzo da cercare nelle mappe
+        if (!Payloads.LooksLikeCoordinates(text)) {
+            return Payloads.BuildMapSearch(text);
         }
 
-        string latitude = parts[0].Trim();
-        string longitude = parts[1].Trim();
-
-        var generator = new PayloadGenerator.Geolocation(latitude, longitude);
+        string[] parts = text.Split(',');
+        var generator = new PayloadGenerator.Geolocation(parts[0].Trim(), parts[1].Trim());
         return generator.ToString();
     }
 

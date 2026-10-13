@@ -68,7 +68,7 @@ internal class Program
         ShowInfo("  sms          number;message");
         ShowInfo("  phone        phonenumber");
         ShowInfo("  wifi         WIFI:SSID;password or WIFI:T:WPA;S:SSID;P:password;");
-        ShowInfo("  geolocation  latitude,longitude");
+        ShowInfo("  geolocation  latitude,longitude, an address or a Google/Apple Maps link");
         ShowInfo("  contact      firstName;lastName;phone;email");
         ShowInfo("  event        subject;description;location;startDateTime;endDateTime");
         ShowInfo("  whatsapp     +number;message");
@@ -82,6 +82,7 @@ internal class Program
         ShowInfo("  qr2l \"info@example.com;Hello;Email body\" mail.png --payload-mode=mail");
         ShowInfo("  qr2l \"+1234567890;Hello from QR\" sms.png --payload-mode=sms");
         ShowInfo("  qr2l \"45.4642,9.1900\" location.png --payload-mode=geolocation");
+        ShowInfo("  qr2l \"Piazza del Duomo, Milano\" place.png --payload-mode=geolocation");
     }
 
     private static QrCodeOptions ParseOptions(string[] args)

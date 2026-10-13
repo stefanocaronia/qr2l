@@ -236,6 +236,14 @@ public class PayloadsTests
     [InlineData("MECARD:N:Rossi,Mario;;", PayloadMode.ContactData)]
     [InlineData("BEGIN:VEVENT\r\nSUMMARY:Cena\r\nEND:VEVENT", PayloadMode.Event)]
     [InlineData("Scrivimi a mario@example.com", PayloadMode.Text)]
+    [InlineData("https://maps.app.goo.gl/Abc123XyZ", PayloadMode.Geolocation)]
+    [InlineData("https://www.google.com/maps/place/Duomo/@45.4642,9.19,17z", PayloadMode.Geolocation)]
+    [InlineData("https://www.google.it/maps?q=45.4642,9.19", PayloadMode.Geolocation)]
+    [InlineData("https://maps.google.com/?q=Milano", PayloadMode.Geolocation)]
+    [InlineData("https://maps.apple.com/?q=Milano", PayloadMode.Geolocation)]
+    [InlineData("https://www.openstreetmap.org/#map=15/45.4642/9.19", PayloadMode.Geolocation)]
+    [InlineData("https://www.google.com/search?q=maps", PayloadMode.Url)]
+    [InlineData("https://example.com/maps", PayloadMode.Url)]
     public void Detection_ShouldRecognizeCompleteFormats(string text, PayloadMode expected)
     {
         Assert.Equal(expected, QrGenerator.DetectPayloadMode(text));
@@ -248,6 +256,7 @@ public class PayloadsTests
     [InlineData(PayloadMode.WhatsApp, "https://wa.me/393331234567")]
     [InlineData(PayloadMode.Phone, "tel:+39021234567")]
     [InlineData(PayloadMode.Geolocation, "geo:45.4642,9.19")]
+    [InlineData(PayloadMode.Geolocation, "https://maps.app.goo.gl/Abc123XyZ")]
     [InlineData(PayloadMode.ContactData, "BEGIN:VCARD\r\nVERSION:3.0\r\nN:Rossi;Mario;;;\r\nADR:;;Via Roma 1;;;;\r\nEND:VCARD")]
     [InlineData(PayloadMode.Event, "BEGIN:VEVENT\r\nSUMMARY:Cena\r\nDTSTART:20261001T180000\r\nEND:VEVENT")]
     public void CompleteFormats_ShouldBeEncodedAsWritten(PayloadMode mode, string text)
@@ -261,6 +270,9 @@ public class PayloadsTests
     [InlineData(PayloadMode.WhatsApp, "+39 333 1234567;Ciao", "https://wa.me/393331234567?text=Ciao")]
     [InlineData(PayloadMode.ContactData, "Mario;Rossi", "BEGIN:VCARD\r\nVERSION:3.0\r\nN:Rossi;Mario;;;\r\nFN:Mario Rossi\r\nEND:VCARD")]
     [InlineData(PayloadMode.Event, "Cena;;;2026-10-01 18:00", "BEGIN:VEVENT\r\nSUMMARY:Cena\r\nDTSTART:20261001T180000\r\nDTEND:20261001T190000\r\nEND:VEVENT")]
+    [InlineData(PayloadMode.Geolocation, "45.4642, 9.19", "geo:45.4642,9.19")]
+    [InlineData(PayloadMode.Geolocation, "Piazza del Duomo, Milano", "https://www.google.com/maps/search/?api=1&query=Piazza%20del%20Duomo%2C%20Milano")]
+    [InlineData(PayloadMode.Geolocation, "Milano", "https://www.google.com/maps/search/?api=1&query=Milano")]
     public void SimplifiedFormats_ShouldBeExpanded(PayloadMode mode, string text, string expected)
     {
         Assert.Equal(expected, QrGenerator.PreparePayload(text, mode));

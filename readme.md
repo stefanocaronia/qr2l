@@ -92,6 +92,9 @@ qr2l "+1234567890;Hi there!" whatsapp.png
 # Geolocation coordinates
 qr2l "45.4642,9.1900" location.png
 
+# A place by address, opened in Google Maps (a Maps link works too, without the option)
+qr2l "Piazza del Duomo, Milano" place.png --payload-mode=geolocation
+
 # Contact (vCard format)
 qr2l "John;Doe;+1234567890;john@example.com" contact.png
 

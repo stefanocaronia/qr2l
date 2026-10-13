@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace qr2l.Core;
 
@@ -32,7 +33,7 @@ public readonly record struct CalendarEntry(string Title, string Description, st
 /// Scrittura (Build) e lettura (TryParse) dei contenuti con più campi, che tengono allineati testo e moduli.
 /// TryParse legge formati completi e semplificati e riesce con ogni testo non vuoto, tranne un evento senza data.
 /// </summary>
-public static class Payloads
+public static partial class Payloads
 {
     #region WiFi
 
@@ -354,6 +355,51 @@ public static class Payloads
 
         return normalized.ToString();
     }
+
+    #endregion
+
+    #region Places
+
+    /// <summary>
+    /// Coordinate "latitudine,longitudine", con l'altitudine facoltativa: numeri col punto, entro i limiti del globo.
+    /// </summary>
+    internal static bool LooksLikeCoordinates(string text)
+    {
+        string[] parts = text.Split(',');
+
+        return parts.Length is 2 or 3 &&
+               double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double latitude) && Math.Abs(latitude) <= 90 &&
+               double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double longitude) && Math.Abs(longitude) <= 180;
+    }
+
+    /// <summary>
+    /// Link di Google Maps, Apple Maps o OpenStreetMap: aperti dal telefono mostrano il posto, senza bisogno di coordinate.
+    /// </summary>
+    internal static bool IsMapLink(string text)
+    {
+        if (!Uri.TryCreate(text.Trim(), UriKind.Absolute, out Uri? uri) || uri.Scheme is not ("http" or "https")) {
+            return false;
+        }
+
+        string host = uri.Host;
+        bool mapsPath = uri.AbsolutePath.StartsWith("/maps", StringComparison.OrdinalIgnoreCase);
+
+        return host is "maps.app.goo.gl" or "maps.apple.com" or "maps.apple" or "openstreetmap.org" or "www.openstreetmap.org" ||
+               (host == "goo.gl" && mapsPath) ||
+               (GoogleHost().IsMatch(host) && (host.StartsWith("maps.") || mapsPath));
+    }
+
+    /// <summary>
+    /// Un indirizzo cercato in Google Maps, con il formato di link pubblico che si apre su qualunque telefono.
+    /// </summary>
+    public static string BuildMapSearch(string place)
+    {
+        return "https://www.google.com/maps/search/?api=1&query=" + Uri.EscapeDataString(place.Trim());
+    }
+
+    // google.com, google.it, google.co.uk e simili, anche con www. o maps. davanti
+    [GeneratedRegex(@"^(www\.|maps\.)?google(\.[a-z]{2,3}){1,2}$")]
+    private static partial Regex GoogleHost();
 
     #endregion
 

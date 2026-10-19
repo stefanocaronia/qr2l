@@ -87,7 +87,9 @@ public partial class MainWindow : Window
         PaintSwatch(bgSwatch, bgColorView.Color);
 
         WireForms();
-        Resized += (_, _) => KeepOnScreen();
+        Opened += (_, _) => FitToScreen();
+        Resized += (_, _) => FitToScreen();
+        PositionChanged += (_, _) => FitToScreen();
 
         ApplyLanguage();
         ApplyThemeIcon();
@@ -235,18 +237,22 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Quando il modulo allunga la finestra, la si alza quanto basta per non farla uscire dallo schermo.
+    /// La finestra non supera l'area utile dello schermo: sugli schermi bassi l'anteprima quadrata si rimpicciolisce,
+    /// e quando il modulo la allunga la si alza quanto basta per non farla uscire.
     /// </summary>
-    private void KeepOnScreen()
+    private void FitToScreen()
     {
         if (Screens.ScreenFromWindow(this) is not { } screen || FrameSize is not { } frame) {
             return;
         }
 
-        int overflow = Position.Y + (int)Math.Ceiling(frame.Height * DesktopScaling) - screen.WorkingArea.Bottom;
+        PixelRect area = screen.WorkingArea;
+        MaxHeight = area.Height / DesktopScaling - (frame.Height - ClientSize.Height);
+
+        int overflow = Position.Y + (int)Math.Ceiling(frame.Height * DesktopScaling) - area.Bottom;
 
         if (overflow > 0) {
-            Position = new PixelPoint(Position.X, Math.Max(screen.WorkingArea.Y, Position.Y - overflow));
+            Position = new PixelPoint(Position.X, Math.Max(area.Y, Position.Y - overflow));
         }
     }
 

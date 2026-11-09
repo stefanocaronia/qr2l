@@ -741,6 +741,8 @@ public partial class MainWindow : Window
             using var stream = new MemoryStream(pngData);
             using var bitmap = new AvaloniaBitmap(stream);
             await Clipboard.SetBitmapAsync(bitmap);
+            // Windows legge l'immagine solo quando qualcuno incolla: il flush la scrive subito, prima che la bitmap sparisca.
+            await Clipboard.FlushAsync();
             FlashDone(copyImageIcon, MaterialIconKind.ContentCopy);
         } catch (Exception ex) {
             await ShowMessageAsync(Localization.T("err_title"), $"{Localization.T("err_copy_image")} {ex.Message}");
@@ -758,6 +760,7 @@ public partial class MainWindow : Window
 
         try {
             await Clipboard.SetTextAsync(QrGenerator.GenerateSvgString(CurrentText, CreateOptions()));
+            await Clipboard.FlushAsync();
             FlashDone(copySvgIcon, MaterialIconKind.Xml);
         } catch (Exception ex) {
             await ShowMessageAsync(Localization.T("err_title"), $"{Localization.T("err_copy_svg")} {ex.Message}");
